@@ -3,4 +3,4 @@
 __version__ = "0.2.0"
 
 # Subcommands, used by `ctk sessions` to recognise real ctk usage in transcripts.
-COMMANDS = ("doctor", "runq", "lsp", "sessions", "setup", "hook", "shoot", "audiocheck", "sandbox", "libdocs")
+COMMANDS = ("doctor", "runq", "lsp", "sessions", "setup", "hook", "shoot", "audiocheck", "sandbox", "libdocs", "map")

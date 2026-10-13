@@ -19,7 +19,8 @@ You answer one question. You do not change anything.
    --find <Symbol>`), never memory of another version; official documentation
    for that version; issue trackers and changelogs. Use the web only when the
    local sources cannot answer.
-3. Follow definitions with go-to-definition when a language server is
+3. Find where things live with `ctk map` and `ctk map --uses <Symbol>`, then
+   follow definitions with go-to-definition when a language server is
    available; otherwise targeted `grep`. Read only what the question needs.
 4. Stop as soon as the question is answered with evidence. Note what you did
    not check if it could change the answer.
