@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import statistics
 import subprocess
@@ -37,6 +38,11 @@ CASES = HERE / "cases"
 RESULTS = HERE / "results"
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
 PLUGIN_IN_IMAGE = "/opt/ctk/plugin"
+USER_CLAUDE_MD = """# Personal preferences
+
+- Explain what you changed in a short summary at the end.
+- Prefer small, focused changes and keep the existing code style."""
+
 # A run that hits these never did the task: stop the suite instead of scoring it.
 LIMIT_ERRORS = re.compile(r"session limit|usage limit|rate limit|credit balance|overloaded", re.IGNORECASE)
 USAGE_KEYS = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
@@ -354,10 +360,19 @@ def run_once(case: Case, arm: str, index: int, args, tag: str, credentials: dict
             setup = docker("exec", "-w", "/work", name, "bash", "/case/setup.sh", timeout=180)
             if setup.returncode != 0:
                 raise RuntimeError(f"setup failed: {setup.stderr.strip()[-500:]}")
+        # Both arms get a user CLAUDE.md, as real users have one: otherwise the bare arm alone would
+        # reuse Claude Code's shared prompt cache and look cheaper than it is in practice.
+        # The with arm is a real install: the plugin plus the section `ctk setup` adds to that file.
+        docker(
+            "exec",
+            name,
+            "sh",
+            "-c",
+            f"mkdir -p ~/.claude && printf '%s\\n' {shlex.quote(USER_CLAUDE_MD)} > ~/.claude/CLAUDE.md",
+        )
         if arm == "with":
-            # A real install is the plugin plus the CLAUDE.md section `ctk setup` writes; install both.
-            snippet = "from claude_toolkit.setup import SNIPPET; print(SNIPPET)"
-            write = f"mkdir -p ~/.claude && PYTHONPATH=/opt/ctk/src python3 -c '{snippet}' > ~/.claude/CLAUDE.md"
+            snippet = "from claude_toolkit.setup import SNIPPET; print(); print(SNIPPET)"
+            write = f"PYTHONPATH=/opt/ctk/src python3 -c '{snippet}' >> ~/.claude/CLAUDE.md"
             docker("exec", name, "sh", "-c", write)
         # Files newer than this marker were made by Claude.
         docker("exec", name, "sh", "-c", "sleep 1; touch /tmp/.ctk-bench-start")

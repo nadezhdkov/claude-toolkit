@@ -36,6 +36,17 @@ plugin's `bin/` on the Bash tool's `PATH` and hide the home directory, so
 skills that call `ctk` cannot work there. The cases use its layout so they can
 move to it later.
 
+### Prompt cache
+
+Claude Code caches the start of the prompt (system prompt, tool and skill
+listings, CLAUDE.md). A session with no customisation at all can reuse a
+cache shared by everyone, which no real user with a `CLAUDE.md` gets, so both
+arms start from the same small user `CLAUDE.md` and only the "with" arm adds
+the ctk section and the plugin. Even so, the plugin's skill and agent
+listings change that prefix, which costs a one-off cache write of a few
+thousand tokens per session: visible in short benchmark tasks, diluted in
+long real sessions. Compare `cache_creation_input_tokens` in `results.json`.
+
 ## Cases
 
 | Case | What it measures | Passes when |
