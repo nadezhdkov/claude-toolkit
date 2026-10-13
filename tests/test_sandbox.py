@@ -158,7 +158,8 @@ def test_memory_limit_or_an_honest_warning(tmp_path, capfd):
     code = cli.main(["sandbox", "--dir", str(tmp_path), "--memory", "128M", "--", "python3", "-c", script])
     captured = capfd.readouterr()
     if scope:
-        assert code == 137 and "memory limit" in captured.err
+        # SIGKILL from the kernel, or SIGTERM when systemd stops the scope after the OOM kill.
+        assert code in (137, 143) and "memory limit" in captured.err
     else:
         assert "limits are not applied" in captured.err and code == 0
 
@@ -185,3 +186,10 @@ def test_tmp_is_capped_in_ram(tmp_path, capfd):
     script = "head -c 3000000 /dev/zero > /tmp/big || echo FULL"
     assert cli.main(["sandbox", "--dir", str(tmp_path), "--tmp-size", "2M", "--", "sh", "-c", script]) == 0
     assert "FULL" in capfd.readouterr().out
+
+
+def test_limit_kills_are_recognised_by_signal():
+    assert sandbox.killed_by_limit(137, scope=False) and sandbox.killed_by_limit(-9, scope=True)
+    assert sandbox.killed_by_limit(143, scope=True)
+    assert not sandbox.killed_by_limit(143, scope=False), "no limits without a scope: SIGTERM is something else"
+    assert not sandbox.killed_by_limit(1, scope=True)

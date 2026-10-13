@@ -382,11 +382,24 @@ def run(args) -> int:
     result = execute(full, profile.timeout)
     if result.timed_out:
         print(f"sandbox: stopped after {profile.timeout:g}s (timeout)", file=sys.stderr)
-    elif result.exit_code in (-signal.SIGKILL, 128 + signal.SIGKILL):
+    elif killed_by_limit(result.exit_code, scope):
         memory = profile.memory or default_memory()
-        print(f"sandbox: killed (SIGKILL); likely the memory limit of {memory}", file=sys.stderr)
+        print(f"sandbox: killed by a signal; likely the memory limit of {memory}", file=sys.stderr)
     code = result.exit_code
     return 128 - code if code < 0 else code
+
+
+def killed_by_limit(exit_code: int, scope: bool) -> bool:
+    """Whether a run ended the way the memory limit ends it.
+
+    The kernel's OOM killer sends SIGKILL; when the systemd scope stops after
+    an out-of-memory kill, the rest of the tree gets SIGTERM first. Without a
+    scope there is no memory limit, so only SIGKILL is attributed to memory.
+    """
+    killed = {-signal.SIGKILL, 128 + signal.SIGKILL}
+    if scope:
+        killed |= {-signal.SIGTERM, 128 + signal.SIGTERM}
+    return exit_code in killed
 
 
 def _quote(text: str) -> str:

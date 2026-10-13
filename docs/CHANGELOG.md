@@ -6,6 +6,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-13
+
+The `ctk` Claude Code plugin (quality hooks, process skills, subagents with
+enforced output contracts), verification tools (`shoot`, `audiocheck`),
+isolation and dependency docs (`sandbox`, `libdocs`), and context and
+evidence tools measured by a new Docker benchmark (`sessions` with real
+tokens, `map`, `verify`, `diffcheck`, the `continuity` hook, and a plugin whose
+always-on context was halved).
+
 ### Added
 
 - `continuity` hook: after a compaction, puts back the branch, commit,
@@ -115,6 +124,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `ctk sandbox` now explains a memory-limit kill also when systemd stops the
+  scope with SIGTERM (exit 143), not only on the kernel's SIGKILL (137).
 - `ctk runq` gave commands started in the same second the same log file, so
   the later one overwrote the earlier log; logs now get a `-2`, `-3`… suffix.
 - `ctk libdocs` crashed on an unreadable `package.json` inside `node_modules`.
@@ -172,6 +183,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   Dependabot for SHA-pinned Actions.
 - Documentation in `docs/` and contribution guides.
 
-[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nadezhdkov/claude-toolkit/releases/tag/v0.1.0

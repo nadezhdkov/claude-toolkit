@@ -62,8 +62,9 @@ Command-line flags win over the file.
 
 ## Exit codes
 
-The command's own exit code; `124` on timeout; `137` when killed by the memory
-limit (the reason is printed on stderr); `1` when the sandbox cannot be set up
+The command's own exit code; `124` on timeout; `137` or `143` when killed by
+the memory limit (SIGKILL from the kernel, or SIGTERM when systemd stops the
+scope; the reason is printed on stderr); `1` when the sandbox cannot be set up
 (the command did not run); `2` for usage errors.
 
 ## Requirements
