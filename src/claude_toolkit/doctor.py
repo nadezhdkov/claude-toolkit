@@ -9,7 +9,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import pep440, semver
-from .common import Host, detect_host, paint, parse_version, run_text, which
+from .common import Host, detect_host, parse_version, run_text, which
+from .style import Style, shorten_home
 
 
 @dataclass
@@ -373,20 +374,37 @@ def check_toolkit(host: Host | None = None) -> Report:
 
 # --- Output -----------------------------------------------------------------
 
-_SYMBOL = {"error": ("✗", "31"), "warn": ("!", "33"), "ok": ("✓", "32")}
+_SYMBOL = {"error": "✗", "warn": "!", "ok": "✓"}
 
 
-def render(report: Report, verbose: bool = False) -> str:
-    lines = [f"ctk doctor · {report.path}"]
+def render(report: Report, verbose: bool = False, style: Style | None = None) -> str:
+    st = style or Style.detect()
+    lines = [st.header("ctk doctor", shorten_home(report.path))]
+    if st.enabled:
+        lines.append("")
+    indent = "  " if st.enabled else ""
     shown = [f for f in report.findings if verbose or f.level != "ok"]
     for finding in shown:
-        symbol, color = _SYMBOL[finding.level]
-        lines.append(f"{paint(symbol, color)} {finding.message}")
+        symbol = st.level(finding.level, _SYMBOL[finding.level], bold=True)
+        message = finding.message if finding.level != "ok" or not st.enabled else st.muted(finding.message)
+        lines.append(f"{indent}{symbol} {message}")
         if finding.fix:
-            lines.append(f"    fix: {finding.fix}")
+            styled = f"{indent}    {st.accent('↳')} {st.muted(finding.fix)}"
+            lines.append(styled if st.enabled else f"    fix: {finding.fix}")
+    if st.enabled and shown:
+        lines.append("")
     if report.errors == 0 and report.warnings == 0:
         checked = len(report.findings)
-        lines.append(paint("ok", "32") + (f" ({checked} checks)" if checked else " (no toolchain pins found)"))
+        detail = f"{checked} checks" if checked else "no toolchain pins found"
+        styled = f"{indent}{st.ok('✓ all good', bold=True)} {st.muted('· ' + detail)}"
+        lines.append(styled if st.enabled else f"ok ({detail})")
+    elif st.enabled:
+        parts = []
+        if report.errors:
+            parts.append(st.err(f"{report.errors} error{'s' if report.errors != 1 else ''}", bold=True))
+        if report.warnings:
+            parts.append(st.warn(f"{report.warnings} warning{'s' if report.warnings != 1 else ''}", bold=True))
+        lines.append(indent + st.muted(" · ").join(parts))
     else:
         lines.append(f"{report.errors} error(s), {report.warnings} warning(s)")
     return "\n".join(lines)

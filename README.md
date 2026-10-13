@@ -41,6 +41,11 @@ fine**, and **never changes your system without asking**. Without a terminal
 (for example when Claude runs it) a change prints its plan and exits with code
 `3`, so a person approves it and reruns with `--yes`.
 
+Output is **styled for people and plain for agents**: colours, charts and a
+progress spinner appear only on an interactive terminal; pipes, logs and
+Claude Code get compact plain text. `NO_COLOR` turns colour off and
+`FORCE_COLOR` turns it on.
+
 ## Install
 
 Requirements: Linux or macOS, `git`, and [uv](https://docs.astral.sh/uv/)
@@ -62,6 +67,10 @@ and uninstalling.
 
 ## Commands
 
+Run `ctk` on its own for an overview:
+
+<img src="docs/assets/screenshots/overview.svg" alt="ctk overview screen listing commands and examples">
+
 | Command | What it does |
 |---|---|
 | [`ctk doctor`](docs/commands/doctor.md) | Toolchain pins vs installed versions, and dependencies vs lockfiles |
@@ -77,15 +86,7 @@ Compares a project's pinned toolchain (`.nvmrc`, `.node-version`,
 `requires-python`, `go.mod`, `rust-toolchain`, `.tool-versions`) with what is
 installed, and checks that dependencies match the lockfile.
 
-```text
-$ ctk doctor ~/projects/app
-ctk doctor · /home/me/projects/app
-✗ node 26.11.1 does not satisfy .nvmrc (24.18.0)
-    fix: install and select Node 24.18.0 (nvm install 24.18.0 && nvm use, fnm use 24.18.0, or mise use node@24.18.0)
-! npm 12.2.0 differs from packageManager 11.16.0
-    fix: corepack enable
-1 error(s), 1 warning(s)
-```
+<img src="docs/assets/screenshots/doctor.svg" alt="ctk doctor output: Node version and lockfile problems with fixes">
 
 `ctk doctor --toolkit` checks the toolkit's own dependencies, with install
 commands for your distribution.
@@ -97,14 +98,7 @@ summary and the log path. Short output is printed unchanged and the exit code
 is always preserved. Recognises pytest, vitest/jest, tsc, ruff/eslint, cargo,
 go test and gradle, with a generic fallback.
 
-```text
-$ ctk runq -- pytest
-runq: exit 1 · 1503 lines · log: ~/.cache/claude-toolkit/runq/20261013-101500-pytest.log
-[pytest]
-FAILED tests/test_api.py::test_login - AssertionError: expected 200, got 500
-FAILED tests/test_api.py::test_logout - KeyError: 'session'
-====================== 2 failed, 1498 passed in 12.34s ======================
-```
+<img src="docs/assets/screenshots/runq.svg" alt="ctk runq output: failing tests highlighted with exit code, timing and log path">
 
 ### `ctk lsp` — language servers
 
@@ -112,14 +106,7 @@ Detects the project's languages and reports whether each has its language
 server binary and its official Claude Code LSP plugin; `--install` installs
 the missing pieces, asking before each one.
 
-```text
-$ ctk lsp ~/projects/mixed
-ctk lsp · /home/me/projects/mixed
-✓ Rust (85 files) · server rust-analyzer: ok · plugin rust-analyzer-lsp: ok
-✗ Python (84 files) · server pyright-langserver: missing · plugin pyright-lsp: missing
-    install server: npm install -g pyright
-    install plugin: claude plugin install pyright-lsp@claude-plugins-official
-```
+<img src="docs/assets/screenshots/lsp.svg" alt="ctk lsp output: languages with server and plugin status and install commands">
 
 ### `ctk sessions` — measure what helps
 
@@ -128,6 +115,8 @@ only**: tool calls and errors, exploration before the first edit, command
 output sizes, "file changed on disk" notices, and use of skills, subagents,
 MCP servers and `ctk`. `--csv -` prints weekly rows for before/after
 comparisons. Message text is never copied.
+
+<img src="docs/assets/screenshots/sessions.svg" alt="ctk sessions output: activity, context usage and a bar chart of the most used tools">
 
 ## Roadmap
 

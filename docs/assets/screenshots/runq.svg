@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="892" height="632" viewBox="0 0 892 632">
+<rect width="892" height="632" rx="10" fill="#0f172a"/>
+<circle cx="20" cy="18" r="6" fill="#f87171"/><circle cx="40" cy="18" r="6" fill="#fbbf24"/><circle cx="60" cy="18" r="6" fill="#4ade80"/>
+<text x="446.0" y="22" text-anchor="middle" fill="#64748b" font-family="ui-sans-serif, sans-serif" font-size="12">ctk runq -- pytest -q</text>
+<g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" xml:space="preserve">
+<text x="18" y="56" textLength="176.4"><tspan fill="#38bdf8" font-weight="bold">◆</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0" font-weight="bold">ctk runq</tspan><tspan fill="#e2e8f0">  </tspan><tspan fill="#94a3b8">pytest -q</tspan></text>
+<text x="18" y="94" textLength="848.4000000000001"><tspan fill="#e2e8f0">  ............................................................................................ [ 76%]</tspan></text>
+<text x="18" y="113" textLength="848.4000000000001"><tspan fill="#e2e8f0">  ..........................FF                                                                 [100%]</tspan></text>
+<text x="18" y="132" textLength="856.8000000000001"><tspan fill="#e2e8f0">  ============================================= FAILURES =============================================</tspan></text>
+<text x="18" y="151" textLength="856.8000000000001"><tspan fill="#e2e8f0">  ____________________________________________ test_login ____________________________________________</tspan></text>
+<text x="18" y="189" textLength="193.20000000000002"><tspan fill="#e2e8f0">      def test_login():</tspan></text>
+<text x="18" y="208" textLength="184.8"><tspan fill="#e2e8f0">          status = 500</tspan></text>
+<text x="18" y="227" textLength="512.4"><tspan fill="#e2e8f0">  &gt;       assert status == 200, f&quot;expected 200, got {status}&quot;</tspan></text>
+<text x="18" y="246" textLength="394.8"><tspan fill="#e2e8f0">  E       AssertionError: expected 200, got 500</tspan></text>
+<text x="18" y="265" textLength="226.8"><tspan fill="#e2e8f0">  E       assert 500 == 200</tspan></text>
+<text x="18" y="303" textLength="319.2"><tspan fill="#e2e8f0">  tests/test_api.py:11: AssertionError</tspan></text>
+<text x="18" y="322" textLength="856.8000000000001"><tspan fill="#e2e8f0">  ___________________________________________ test_logout ____________________________________________</tspan></text>
+<text x="18" y="360" textLength="201.60000000000002"><tspan fill="#e2e8f0">      def test_logout():</tspan></text>
+<text x="18" y="379" textLength="184.8"><tspan fill="#e2e8f0">          session = {}</tspan></text>
+<text x="18" y="398" textLength="277.2"><tspan fill="#e2e8f0">  &gt;       assert session[&quot;token&quot;]</tspan></text>
+<text x="18" y="417" textLength="277.2"><tspan fill="#e2e8f0">                 ^^^^^^^^^^^^^^^^</tspan></text>
+<text x="18" y="436" textLength="226.8"><tspan fill="#e2e8f0">  E       KeyError: &#x27;token&#x27;</tspan></text>
+<text x="18" y="474" textLength="268.8"><tspan fill="#e2e8f0">  tests/test_api.py:16: KeyError</tspan></text>
+<text x="18" y="493" textLength="856.8000000000001"><tspan fill="#e2e8f0">  ===================================== short test summary info ======================================</tspan></text>
+<text x="18" y="512" textLength="655.2"><tspan fill="#e2e8f0">  </tspan><tspan fill="#f87171" font-weight="bold">FAILED</tspan><tspan fill="#e2e8f0"> tests/test_api.py::test_login - AssertionError: expected 200, got 500</tspan></text>
+<text x="18" y="531" textLength="495.6"><tspan fill="#e2e8f0">  </tspan><tspan fill="#f87171" font-weight="bold">FAILED</tspan><tspan fill="#e2e8f0"> tests/test_api.py::test_logout - KeyError: &#x27;token&#x27;</tspan></text>
+<text x="18" y="550" textLength="260.40000000000003"><tspan fill="#e2e8f0">  </tspan><tspan fill="#f87171" font-weight="bold">2 failed</tspan><tspan fill="#e2e8f0">, </tspan><tspan fill="#4ade80" font-weight="bold">118 passed</tspan><tspan fill="#e2e8f0"> in 0.13s</tspan></text>
+<text x="18" y="588" textLength="235.20000000000002"><tspan fill="#e2e8f0">  </tspan><tspan fill="#f87171" font-weight="bold">✗ exit 1</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">· 25 lines · 0.4s</tspan></text>
+<text x="18" y="607" textLength="512.4"><tspan fill="#e2e8f0">  </tspan><tspan fill="#94a3b8">log</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#22d3ee">~/.cache/claude-toolkit/runq/20261013-085704-pytest.log</tspan></text>
+</g></svg>

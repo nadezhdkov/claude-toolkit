@@ -18,6 +18,20 @@
    `~/.claude` receives a marked, removable section.
 6. **The toolkit is software too.** Tests, CI, changelog and semantic versions.
 
+## Output
+
+- **Styled for people, plain for agents.** Colour, bar charts, the overview
+  screen and the progress spinner are used only when stdout (or stderr, for the
+  spinner) is an interactive terminal. Pipes, logs and Claude Code receive plain
+  text, whose format is a stable contract covered by tests.
+- `NO_COLOR` always disables colour; `FORCE_COLOR` or `CLICOLOR_FORCE` enable it
+  without a terminal; `TERM=dumb` disables it. Truecolor is used when
+  `COLORTERM` is `truecolor` or `24bit`, otherwise the 16 basic colours.
+- The palette comes from the logo: sky and cyan accents, green for success,
+  amber for warnings, red for errors and slate for secondary text.
+- Paths under the home directory are shown as `~/…`.
+- All styling lives in `style.py`; commands never write escape codes directly.
+
 ## Choosing a shape
 
 | Shape | Context cost | Use for |

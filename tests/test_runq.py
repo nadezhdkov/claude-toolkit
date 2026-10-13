@@ -33,6 +33,14 @@ def test_extractor_is_chosen_from_output_when_command_is_generic():
     assert "[pytest]" in text and text.count("FAILED ") == 3
 
 
+def test_quiet_pytest_summary_is_recognised():
+    output = "\n".join(
+        ["." * 80] * 70 + ["FAILED tests/test_a.py::test_x - assert 1 == 2", "1 failed, 69 passed in 0.50s"]
+    )
+    text = runq.summarise(["pytest", "-q"], output, 1, None)
+    assert text.splitlines()[-1] == "1 failed, 69 passed in 0.50s"
+
+
 def test_typescript_errors():
     output = "\n".join(
         [f"src/a{i}.ts(1,1): error TS2322: Type 'string' is not assignable" for i in range(70)] + ["Found 70 errors."]

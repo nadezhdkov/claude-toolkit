@@ -85,3 +85,10 @@ def test_without_a_terminal_changes_need_explicit_yes(home, monkeypatch, capsys)
     assert cli.main(["setup"]) == EXIT_NEEDS_CONFIRMATION
     assert not (home / "CLAUDE.md").exists()
     assert "rerun with --yes" in capsys.readouterr().err
+
+
+def test_bare_ctk_prints_an_overview(capsys):
+    assert cli.main([]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("claude-toolkit ") and "\x1b" not in out
+    assert all(name in out for name in ("doctor", "runq", "lsp", "sessions", "setup"))

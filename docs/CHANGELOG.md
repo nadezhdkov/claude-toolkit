@@ -6,6 +6,34 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-13
+
+### Added
+
+- Styled terminal output for every command: a branded header, coloured status
+  symbols, highlighted failures and test counts, aligned tables, copyable
+  install commands and bar charts of tool usage in `ctk sessions`, using a
+  truecolor palette from the logo with a 16-colour fallback.
+- `ctk` without a command shows an overview of commands and examples.
+- Progress spinners with elapsed time while `ctk runq` runs a command and while
+  `ctk sessions` reads transcripts (interactive terminals only).
+- `ctk runq` reports the command's duration.
+- Styled confirmation prompts and plan output in `ctk setup`.
+- README screenshots generated from a synthetic demo environment
+  (`scripts/make_screenshots.py`, `scripts/render_terminal.py`).
+
+### Changed
+
+- Paths under the home directory are shown as `~/…` in `doctor`, `lsp` and `runq`.
+- Colour follows `NO_COLOR`, `FORCE_COLOR`, `CLICOLOR_FORCE` and `TERM=dumb`;
+  pipes and agents keep the plain format unchanged.
+
+### Fixed
+
+- `ctk sessions` counted words such as `ctk as` inside commit messages as
+  `ctk` commands; only real subcommands are counted now.
+- `ctk runq` did not recognise the summary line of `pytest -q`.
+
 ## [0.1.0] - 2026-10-13
 
 ### Added
@@ -31,5 +59,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
   Dependabot for SHA-pinned Actions.
 - Documentation in `docs/` and contribution guides.
 
-[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nadezhdkov/claude-toolkit/releases/tag/v0.1.0

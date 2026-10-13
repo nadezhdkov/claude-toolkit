@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .common import confirm, detect_host
 from .doctor import TOOLKIT_DEPENDENCIES
+from .style import Style
 
 START = "<!-- claude-toolkit:start -->"
 END = "<!-- claude-toolkit:end -->"
@@ -115,18 +116,31 @@ def plan(*, uninstall: bool = False) -> list[Step]:
 
 
 def run(*, assume_yes: bool, dry_run: bool, uninstall: bool) -> int:
+    st = Style.detect()
     steps = plan(uninstall=uninstall)
     if not steps:
-        print("ctk setup: nothing to do")
+        if st.enabled:
+            print(f"{st.header('ctk setup')}\n\n  {st.ok('✓ already set up', bold=True)} {st.muted('· nothing to do')}")
+        else:
+            print("ctk setup: nothing to do")
         return 0
-    print("ctk setup plan:")
-    for index, step in enumerate(steps, 1):
-        print(f"  {index}. {step.description}")
+    if st.enabled:
+        print(f"{st.header('ctk setup', 'uninstall' if uninstall else '')}\n\n  {st.accent('Plan', bold=True)}")
+        for index, step in enumerate(steps, 1):
+            print(f"    {st.accent(str(index))}  {step.description}")
+        print()
+    else:
+        print("ctk setup plan:")
+        for index, step in enumerate(steps, 1):
+            print(f"  {index}. {step.description}")
     if dry_run:
+        if st.enabled:
+            print(f"  {st.muted('dry run: nothing was changed')}")
         return 0
     for step in steps:
         if confirm(f"{step.description}?", assume_yes=assume_yes):
-            print("  " + step.apply())
+            result = step.apply()
+            print(f"  {st.ok('✓')} {result}" if st.enabled else "  " + result)
         else:
-            print(f"  skipped: {step.description}")
+            print(f"  {st.muted('↷ skipped: ' + step.description)}" if st.enabled else f"  skipped: {step.description}")
     return 0

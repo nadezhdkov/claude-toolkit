@@ -16,6 +16,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .style import Spinner, Style, shorten_home
+
 SHORT_OUTPUT_LINES = 60
 MAX_FAILURE_LINES = 50
 TAIL_LINES = 40
@@ -50,7 +52,12 @@ def _pytest(lines: list[str]) -> Digest:
     failed = re.compile(r"^(FAILED|ERROR) \S")
     digest.failures = [line.rstrip() for line in lines if failed.match(line)]
     digest.failure_count = len(digest.failures)
-    digest.summary = _collect(lines, re.compile(r"^=+ .*(passed|failed|error|skipped|no tests ran).* =+$"))
+    digest.summary = _collect(
+        lines,
+        re.compile(
+            r"^=+ .*(passed|failed|error|skipped|no tests ran).* =+$|^\d+ (passed|failed|errors?)\b.* in [\d.]+s"
+        ),
+    )
     if not digest.failures:
         digest.failures = _collect(lines, re.compile(r"^E\s+|^_{3,} .* _{3,}$"), MAX_FAILURE_LINES)
     return digest
@@ -140,10 +147,20 @@ def digest_output(command: list[str], lines: list[str]) -> Digest:
     return _generic(lines)
 
 
-def summarise(command: list[str], output: str, exit_code: int, log_path: Path | None) -> str:
+def summarise(
+    command: list[str],
+    output: str,
+    exit_code: int,
+    log_path: Path | None,
+    style: Style | None = None,
+    elapsed: float | None = None,
+) -> str:
     """Render what to show for one finished command."""
+    st = style or Style.detect()
     text = ANSI.sub("", output)
     lines = text.splitlines()
+    if st.enabled:
+        return _summarise_styled(command, lines, exit_code, log_path, st, elapsed)
     where = f" · log: {log_path}" if log_path else ""
     header = f"runq: exit {exit_code} · {len(lines)} lines{where}"
     if len(lines) <= SHORT_OUTPUT_LINES:
@@ -168,6 +185,65 @@ def summarise(command: list[str], output: str, exit_code: int, log_path: Path | 
     return "\n".join(out)
 
 
+_FAIL_WORD = re.compile(
+    r"(FAILED|ERROR|FAIL|--- FAIL|error(?:\[E\d+\])?|error TS\d+|panic|\u00d7|\u2717|\u2715|\u25cf)"
+)
+_COUNT = re.compile(r"(\d+ (?:failed|errors?|problems?))|(\d+ passed)|(\d+ (?:skipped|warnings?))")
+
+
+def _paint_failure(line: str, st: Style) -> str:
+    return _FAIL_WORD.sub(lambda m: st.err(m.group(0), bold=True), line, count=1)
+
+
+def _paint_summary(line: str, st: Style) -> str:
+    def color(match: re.Match) -> str:
+        if match.group(1):
+            return st.err(match.group(0), bold=True)
+        if match.group(2):
+            return st.ok(match.group(0), bold=True)
+        return st.warn(match.group(0), bold=True)
+
+    return st.bold(_COUNT.sub(color, line)) if _COUNT.search(line) else st.bold(line)
+
+
+def _summarise_styled(
+    command: list[str], lines: list[str], exit_code: int, log_path: Path | None, st: Style, elapsed: float | None
+) -> str:
+    out = [st.header("ctk runq", " ".join(command)), ""]
+    if len(lines) <= SHORT_OUTPUT_LINES:
+        digest = digest_output(command, lines)
+        failures, summary = set(digest.failures), set(digest.summary)
+        for line in lines:
+            if line in failures:
+                out.append(f"  {_paint_failure(line, st)}")
+            elif line in summary:
+                out.append(f"  {_paint_summary(line, st)}")
+            else:
+                out.append(f"  {line}")
+    else:
+        digest = digest_output(command, lines)
+        out.append(f"  {st.accent(f'[{digest.tool}]', bold=True)}")
+        failures = digest.failures[:MAX_FAILURE_LINES]
+        out.extend(f"  {_paint_failure(line, st)}" for line in failures)
+        hidden = len(digest.failures) - len(failures)
+        if hidden > 0:
+            out.append(f"  {st.muted(f'… {hidden} more failure line(s) in the log')}")
+        if digest.failure_count is not None and digest.failure_count != len(failures):
+            out.append(f"  {st.muted(f'failures counted: {digest.failure_count}')}")
+        out.extend(f"  {_paint_summary(line, st)}" for line in digest.summary[-5:])
+        if exit_code != 0 and not failures:
+            out.append(f"  {st.muted(f'── last {TAIL_LINES} lines ' + '─' * 30)}")
+            out.extend(f"  {line}" for line in lines[-TAIL_LINES:])
+        elif exit_code == 0 and not digest.summary:
+            out.extend(f"  {line}" for line in lines[-5:])
+    status = st.ok(f"✓ exit {exit_code}", bold=True) if exit_code == 0 else st.err(f"✗ exit {exit_code}", bold=True)
+    facts = [f"{len(lines)} lines"] + ([f"{elapsed:.1f}s"] if elapsed is not None else [])
+    out += ["", f"  {status} {st.muted('· ' + ' · '.join(facts))}"]
+    if log_path:
+        out.append(f"  {st.muted('log')} {st.accent2(shorten_home(log_path))}")
+    return "\n".join(out)
+
+
 def run(command: list[str], *, keep_logs: int = 50) -> int:
     if not command:
         print("usage: ctk runq -- <command> [args...]", file=sys.stderr)
@@ -176,8 +252,9 @@ def run(command: list[str], *, keep_logs: int = 50) -> int:
     directory.mkdir(parents=True, exist_ok=True)
     name = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(command[0]).name)[:40]
     log_path = directory / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}.log"
+    started = time.monotonic()
     try:
-        with log_path.open("w", encoding="utf-8", errors="replace") as log:
+        with log_path.open("w", encoding="utf-8", errors="replace") as log, Spinner(f"running {' '.join(command)}"):
             log.write(f"$ {' '.join(command)}\n")
             process = subprocess.Popen(
                 command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace"
@@ -193,7 +270,7 @@ def run(command: list[str], *, keep_logs: int = 50) -> int:
         return 127
     except KeyboardInterrupt:
         return 130
-    print(summarise(command, "".join(chunks), exit_code, log_path))
+    print(summarise(command, "".join(chunks), exit_code, log_path, elapsed=time.monotonic() - started))
     _prune(directory, keep_logs)
     return exit_code
 

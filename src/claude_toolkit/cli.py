@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import __version__, doctor, lsp, runq, sessions, setup
 from .common import EXIT_NEEDS_CONFIRMATION, ConfirmationRequired
+from .style import Spinner, Style
 
 
 def _doctor(args: argparse.Namespace) -> int:
@@ -26,7 +27,8 @@ def _runq(args: argparse.Namespace) -> int:
 def _sessions(args: argparse.Namespace) -> int:
     root = Path(args.root).expanduser() if args.root else sessions.default_root()
     paths = sessions.find_sessions(root, args.since, include_subagents=not args.no_subagents)
-    parsed = [sessions.parse_session(path) for path in paths]
+    with Spinner(f"reading {len(paths)} transcripts"):
+        parsed = [sessions.parse_session(path) for path in paths]
     if args.project:
         parsed = [s for s in parsed if s.project and args.project in s.project]
     if args.csv:
@@ -60,12 +62,47 @@ def _setup(args: argparse.Namespace) -> int:
     return setup.run(assume_yes=args.yes, dry_run=args.dry_run, uninstall=args.uninstall)
 
 
+OVERVIEW = (
+    ("doctor", "toolchain pins vs installed versions, dependencies vs lockfiles"),
+    ("runq", "run a command; print failures, summary and the full-log path"),
+    ("lsp", "language servers and Claude Code LSP plugins a project needs"),
+    ("sessions", "counts-only metrics from Claude Code transcripts"),
+    ("setup", "wire the toolkit into Claude Code (asks before each change)"),
+)
+EXAMPLES = ("ctk doctor ~/project", "ctk runq -- pytest", "ctk lsp --install", "ctk sessions --since 30")
+DOCS = "https://github.com/nadezhdkov/claude-toolkit"
+
+
+def overview() -> str:
+    """What `ctk` with no command shows."""
+    st = Style.detect()
+    width = max(len(name) for name, _ in OVERVIEW)
+    if not st.enabled:
+        lines = [f"claude-toolkit {__version__}: tools that make Claude Code more effective", "", "commands:"]
+        lines += [f"  {name.ljust(width)}  {text}" for name, text in OVERVIEW]
+        lines += ["", "examples:", *(f"  {example}" for example in EXAMPLES), "", f"docs: {DOCS}"]
+        return "\n".join(lines)
+    lines = [
+        f"{st.accent('◆', bold=True)} {st.bold('claude-toolkit')} {st.muted(__version__)}",
+        f"  {st.muted('Tools that make Claude Code more effective.')}",
+        "",
+        f"  {st.accent('Commands', bold=True)}",
+        *(f"    {st.accent2(name.ljust(width))}  {text}" for name, text in OVERVIEW),
+        "",
+        f"  {st.accent('Examples', bold=True)}",
+        *(f"    {st.command(example)}" for example in EXAMPLES),
+        "",
+        f"  {st.muted('Help:')} ctk <command> --help   {st.muted('Docs:')} {st.accent2(DOCS)}",
+    ]
+    return "\n".join(lines)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ctk", description="claude-toolkit: tools that make Claude Code more effective."
     )
     parser.add_argument("--version", action="version", version=f"ctk {__version__}")
-    sub = parser.add_subparsers(dest="name", required=True, metavar="<command>")
+    sub = parser.add_subparsers(dest="name", metavar="<command>")
 
     p = sub.add_parser("doctor", help="check toolchain pins and dependency sync")
     p.add_argument("path", nargs="?", default=".")
@@ -104,6 +141,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.name is None:
+        print(overview())
+        return 0
     try:
         return args.func(args)
     except ConfirmationRequired as needed:
