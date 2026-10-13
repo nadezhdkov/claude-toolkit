@@ -116,3 +116,7 @@ def test_credentials_come_from_env_file_or_environment(tmp_path, monkeypatch):
     assert bench.load_credentials() == {}
     (tmp_path / ".env").write_text("# comment\nCLAUDE_CODE_OAUTH_TOKEN='abc'\nOTHER=ignored\n")
     assert bench.load_credentials() == {"CLAUDE_CODE_OAUTH_TOKEN": "abc"}
+
+
+def test_an_empty_transcript_has_zero_usage():
+    assert bench.Transcript([]).context_tokens == 0

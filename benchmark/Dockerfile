@@ -17,7 +17,8 @@ RUN curl -fsSL -o /tmp/gitleaks.tgz \
     && tar -xzf /tmp/gitleaks.tgz -C /usr/local/bin gitleaks \
     && rm /tmp/gitleaks.tgz
 
-RUN useradd --create-home --shell /bin/bash bench
+RUN useradd --create-home --shell /bin/bash bench \
+    && mkdir /work && chown bench:bench /work
 USER bench
 ENV PATH=/home/bench/.local/bin:$PATH \
     DISABLE_AUTOUPDATER=1 \

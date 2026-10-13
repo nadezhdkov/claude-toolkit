@@ -26,8 +26,8 @@ the sandbox, so Claude runs without permission prompts inside it. Each
 container is limited to 2 GB of memory and 2 CPUs (`--memory`, `--cpus`), and
 runs are sequential unless you pass `-j`.
 
-The image is tagged with the commit (`ctk-bench:<sha>`, `-dirty` when `src/`
-or `plugin/` have uncommitted changes) and rebuilt when that changes.
+The image is tagged with a hash of what goes into it (the Dockerfile, `src/`
+and `plugin/`), so it is rebuilt whenever any of them changes.
 
 `claude plugin eval` would be the natural runner, but its runs do not put the
 plugin's `bin/` on the Bash tool's `PATH` and hide the home directory, so

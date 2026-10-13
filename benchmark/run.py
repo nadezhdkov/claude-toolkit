@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -36,6 +37,7 @@ CASES = HERE / "cases"
 RESULTS = HERE / "results"
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
 PLUGIN_IN_IMAGE = "/opt/ctk/plugin"
+USAGE_KEYS = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
 
 
 # --- Case files ---------------------------------------------------------------
@@ -161,7 +163,7 @@ class Transcript:
     lines: list[dict]
     final: str = ""
     tool_calls: list[tuple[str, dict]] = field(default_factory=list)
-    usage: dict = field(default_factory=dict)
+    usage: dict = field(default_factory=lambda: dict.fromkeys(USAGE_KEYS, 0))
     cost: float = 0.0
     turns: int = 0
     error: str | None = None
@@ -176,7 +178,7 @@ class Transcript:
                 continue
         transcript = cls(lines)
         seen: set[str] = set()
-        summed = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0}
+        summed = dict.fromkeys(USAGE_KEYS, 0)
         for line in lines:
             message = line.get("message") if isinstance(line.get("message"), dict) else {}
             if line.get("type") == "assistant":
@@ -275,11 +277,13 @@ def docker(*args: str, input_text: str | None = None, timeout: float = 120, env=
 
 
 def image_tag() -> str:
-    sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True)
-    dirty = subprocess.run(
-        ["git", "-C", str(REPO), "status", "--porcelain", "--", "src", "plugin"], capture_output=True, text=True
-    )
-    return f"ctk-bench:{sha.stdout.strip() or 'dev'}{'-dirty' if dirty.stdout.strip() else ''}"  # fmt: skip
+    """Tag from the content that goes into the image, so any change to it rebuilds."""
+    digest = hashlib.sha256()
+    for path in sorted([HERE / "Dockerfile", *(REPO / "src").rglob("*"), *(REPO / "plugin").rglob("*")]):
+        if path.is_file() and "__pycache__" not in path.parts:
+            digest.update(str(path.relative_to(REPO)).encode())
+            digest.update(path.read_bytes())
+    return f"ctk-bench:{digest.hexdigest()[:12]}"
 
 
 def claude_version() -> str:
