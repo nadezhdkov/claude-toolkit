@@ -21,7 +21,9 @@ Each run gets a fresh container from `benchmark/Dockerfile`: Claude Code at
 the same version as the host, this branch's `ctk` on `PATH`, gitleaks, and
 nothing from your own configuration (no `~/.claude`, no installed plugins, no
 `CLAUDE.md`). The "without" arm is therefore really without the toolkit, and
-the "with" arm loads only `plugin/` through `--plugin-dir`. The container is
+the "with" arm is a real install: `plugin/` through `--plugin-dir` plus the
+`~/.claude/CLAUDE.md` section that `ctk setup` writes, which is what tells
+Claude when to use each `ctk` command. The container is
 the sandbox, so Claude runs without permission prompts inside it. Each
 container is limited to 2 GB of memory and 2 CPUs (`--memory`, `--cpus`), and
 runs are sequential unless you pass `-j`.

@@ -354,9 +354,13 @@ def run_once(case: Case, arm: str, index: int, args, tag: str, credentials: dict
             setup = docker("exec", "-w", "/work", name, "bash", "/case/setup.sh", timeout=180)
             if setup.returncode != 0:
                 raise RuntimeError(f"setup failed: {setup.stderr.strip()[-500:]}")
-        docker(
-            "exec", name, "sh", "-c", "sleep 1; touch /tmp/.ctk-bench-start"
-        )  # files newer than this were made by Claude
+        if arm == "with":
+            # A real install is the plugin plus the CLAUDE.md section `ctk setup` writes; install both.
+            snippet = "from claude_toolkit.setup import SNIPPET; print(SNIPPET)"
+            write = f"mkdir -p ~/.claude && PYTHONPATH=/opt/ctk/src python3 -c '{snippet}' > ~/.claude/CLAUDE.md"
+            docker("exec", name, "sh", "-c", write)
+        # Files newer than this marker were made by Claude.
+        docker("exec", name, "sh", "-c", "sleep 1; touch /tmp/.ctk-bench-start")
         command = ["exec", "-w", "/work", name, "claude", "-p", case.prompt, "--output-format", "stream-json",
                    "--verbose", "--max-turns", str(case.max_turns), "--dangerously-skip-permissions"]  # fmt: skip
         if args.model:
