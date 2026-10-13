@@ -8,7 +8,7 @@
     {
       "name": "ctk",
       "source": "./plugin",
-      "description": "Quality hooks backed by the ctk command: formatting, affected tests, destructive-command guard, secret scanning, notifications"
+      "description": "Quality hooks and process skills backed by the ctk command"
     }
   ]
 }
