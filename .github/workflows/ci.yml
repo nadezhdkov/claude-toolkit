@@ -67,6 +67,7 @@ jobs:
         run: |
           uv tool install --editable .
           ctk --version
+          uv sync
           ctk doctor .
           ctk lsp . || true
           ctk runq -- python3 -c "print('hello from runq')"
