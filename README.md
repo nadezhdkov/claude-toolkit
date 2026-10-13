@@ -213,6 +213,12 @@ end in a verdict (`pass`/`fail`, `approve`/`changes-requested`,
 these output contracts, and the `orchestrate` skill says when to delegate and
 runs the implement → test → review loop. See [docs/agents.md](docs/agents.md).
 
+## Benchmark
+
+`benchmark/run.py` runs fixed tasks with and without the plugin, each in a
+clean Docker container, and compares score, context tokens, turns and cost.
+See [benchmark/README.md](benchmark/README.md).
+
 ## Roadmap
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the

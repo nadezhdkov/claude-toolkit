@@ -33,8 +33,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Check install.sh
-        run: shellcheck install.sh
+      - name: Check shell scripts
+        run: shellcheck install.sh plugin/bin/ctk benchmark/cases/*/setup.sh benchmark/cases/*/checks/*.sh
 
   test:
     name: Test (Python ${{ matrix.python }})

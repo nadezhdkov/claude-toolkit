@@ -1,0 +1,20 @@
+#!/bin/sh
+# ctk launcher shipped with the plugin. Claude Code puts plugin/bin on the Bash
+# tool's PATH after the user's own entries, so an installed ctk still wins; this
+# copy is used where that one cannot be reached (Claude Code's sandbox hides the
+# home directory, and with it ~/.local/bin).
+self=$(readlink -f "$0" 2>/dev/null || echo "$0")
+src="$(dirname "$self")/../../src"
+if [ -f "$src/claude_toolkit/cli.py" ]; then
+  PYTHONPATH="$src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m claude_toolkit.cli "$@"
+fi
+# A plugin copied without its repository: hand over to another ctk on PATH.
+IFS=:
+for dir in $PATH; do
+  candidate="$dir/ctk"
+  if [ -x "$candidate" ] && [ "$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")" != "$self" ]; then
+    exec "$candidate" "$@"
+  fi
+done
+echo "ctk: not installed (see https://github.com/nadezhdkov/claude-toolkit#install)" >&2
+exit 127
