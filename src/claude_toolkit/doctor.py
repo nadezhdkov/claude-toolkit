@@ -341,7 +341,7 @@ TOOLKIT_DEPENDENCIES = (
         "claude", "Claude Code CLI (plugins, LSP)", True, {"any": "see https://docs.claude.com/en/docs/claude-code"}
     ),
     Dependency("gh", "GitHub workflows (PRs, CI)", False, _pm("github-cli", "gh", "gh", "gh")),
-    Dependency("ffmpeg", "audio checks (upcoming `ctk audiocheck`)", False, _pm("ffmpeg"), shipped=False),
+    Dependency("ffmpeg", "audio checks (`ctk audiocheck`) and desktop captures", False, _pm("ffmpeg")),
     Dependency("bwrap", "sandbox for untrusted code (upcoming `ctk sandbox`)", False, _pm("bubblewrap"), shipped=False),
     Dependency(
         "Xvfb",
