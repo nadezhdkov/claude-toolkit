@@ -15,7 +15,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
   diff image; `ctk shoot compare` and `ctk shoot sheet` (numbered contact
   sheets). Web captures report HTTP, console and page errors.
 - A standard-library PNG reader and writer (`png.py`).
-- `ctk doctor --toolkit` checks for Xvfb.
+- `ctk audiocheck`: integrated loudness, loudness range and true peak (EBU
+  R128), clipping (flat tops at the peak value), silent files, leading and
+  trailing silence, inner gaps, DC offset and, with `--loop`, clicks and level
+  jumps at the loop point; `--target` loudness, `--strict`, `--json` and
+  `--images` (waveform and spectrogram PNGs).
+- `ctk doctor --toolkit` checks for Xvfb and ffmpeg.
 
 ### Added
 

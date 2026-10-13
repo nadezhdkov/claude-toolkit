@@ -78,6 +78,7 @@ Run `ctk` on its own for an overview:
 | [`ctk lsp`](docs/commands/lsp.md) | Language servers and Claude Code LSP plugins a project needs |
 | [`ctk sessions`](docs/commands/sessions.md) | Counts-only metrics from Claude Code transcripts |
 | [`ctk shoot`](docs/commands/shoot.md) | Deterministic screenshots of web pages, Godot scenes and desktop apps; baselines and contact sheets |
+| [`ctk audiocheck`](docs/commands/audiocheck.md) | Loudness, clipping, silence and loop seams of audio files, with waveform and spectrogram images |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 
@@ -135,6 +136,17 @@ ctk shoot web localhost:5173 --baseline shots/home.png
 ctk shoot godot . --scene res://ui/menu.tscn
 ```
 
+### `ctk audiocheck`: hear problems without listening
+
+Measures loudness (EBU R128) and true peak, finds clipping (even when
+attenuated afterwards), silent files, silence at the edges and DC offset, and
+with `--loop` detects clicks at the loop point. `--images` writes a waveform
+and a spectrogram per file.
+
+```bash
+ctk audiocheck assets/audio --target -16 --images
+```
+
 ## Hooks plugin
 
 The `ctk` Claude Code plugin adds hooks that run outside the conversation and
@@ -162,8 +174,8 @@ Per-project settings and opt-out live in `.claude-toolkit.toml`; see
 ## Roadmap
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
-installer; then came the quality hooks plugin and `ctk shoot`. Next come audio
-verification (`audiocheck`), process skills, a
+installer; then came the quality hooks plugin, `ctk shoot` and `ctk audiocheck`.
+Next come process skills, a
 sandbox for untrusted code and subagents with output contracts, delivered as the
 Claude Code plugin. See [docs/roadmap.md](docs/roadmap.md).
 
