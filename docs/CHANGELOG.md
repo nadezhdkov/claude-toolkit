@@ -8,6 +8,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Subagents in the `ctk` plugin: `test-runner` (haiku), `reviewer` and
+  `researcher`, read-only and unable to start other agents, each declaring an
+  output contract (maximum lines, allowed verdicts, evidence) in its frontmatter.
+- `agent-contract` hook (SubagentStop): sends a ctk subagent's report back once
+  when it is too long, lacks a valid `VERDICT:` line or gives a verdict without
+  `path:line`/URL evidence.
+- `orchestrate` skill: when to delegate, self-contained briefs, parallel
+  fan-out and the implement → test → review loop.
+
+### Added
+
 - `ctk libdocs`: the installed version of a dependency next to its declared
   constraint, its source path, README sections and public API, for Python,
   Node (with `@types` fallback), Rust and Go; `--find SYMBOL` prints where a

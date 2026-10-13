@@ -204,11 +204,20 @@ that you call as `/ctk:<name>`: `debug` (root cause before fix), `ship`
 and `security-pass`. They defer to a project's own process when it has one.
 See [docs/skills.md](docs/skills.md).
 
+## Subagents
+
+`ctk:test-runner`, `ctk:reviewer` and `ctk:researcher` take noisy or
+independent work out of the main conversation and return short reports that
+end in a verdict (`pass`/`fail`, `approve`/`changes-requested`,
+`answered`/`not-found`), with `path:line` or URL evidence. A hook enforces
+these output contracts, and the `orchestrate` skill says when to delegate and
+runs the implement → test → review loop. See [docs/agents.md](docs/agents.md).
+
 ## Roadmap
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
 installer; then came the quality hooks plugin, `ctk shoot`, `ctk audiocheck` and
-the process skills, `ctk sandbox` and `ctk libdocs`. Next come subagents with
+the process skills, `ctk sandbox`, `ctk libdocs` and subagents with enforced
 output contracts. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Development

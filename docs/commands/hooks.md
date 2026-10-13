@@ -1,6 +1,6 @@
 # Hooks (`ctk` plugin) and `ctk hook`
 
-The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers five
+The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers six
 hooks. Each is a one-line shell command that calls `ctk hook <name>` with the
 event JSON on stdin, so all logic lives in the tested `ctk` package.
 
@@ -11,6 +11,7 @@ event JSON on stdin, so all logic lives in the tested `ctk` package.
 | `guard-destructive` | before Bash | flags `rm -rf` outside the project, force-push to `main`/`master`, `git reset --hard` with uncommitted work; **warn-only by default** |
 | `secrets` | before Bash (`git commit`) | `gitleaks` on the staged changes; denies the commit on findings |
 | `notify` | waiting for input, end of a long turn | desktop notification, at most one per minute |
+| `agent-contract` | a ctk subagent finishes | sends a report that breaks its output contract back once ([agents](../agents.md)) |
 
 ## Install
 

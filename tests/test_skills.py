@@ -15,8 +15,8 @@ def frontmatter(text: str) -> dict[str, str]:
     return dict(line.split(": ", 1) for line in block.splitlines() if ": " in line)
 
 
-def test_the_phase_4_skills_exist():
-    assert NAMES == ["debug", "handoff", "onboard-repo", "security-pass", "ship", "visual-qa"]
+def test_the_skills_exist():
+    assert NAMES == ["debug", "handoff", "onboard-repo", "orchestrate", "security-pass", "ship", "visual-qa"]
 
 
 @pytest.mark.parametrize("name", NAMES)
