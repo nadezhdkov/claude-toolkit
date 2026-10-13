@@ -117,3 +117,8 @@ def test_a_users_own_agent_with_the_same_name_is_not_judged():
 def test_rust_paths_are_not_evidence():
     problems = agent_contract.violations("uses std::io wrongly\nVERDICT: changes-requested", REVIEW)
     assert any("needs evidence" in problem for problem in problems)
+
+
+def test_files_without_extension_are_evidence_but_times_are_not():
+    assert agent_contract.violations("see Makefile:12\nVERDICT: changes-requested", REVIEW) == []
+    assert agent_contract.violations("ran at 12:30\nVERDICT: changes-requested", REVIEW) != []

@@ -22,8 +22,9 @@ from pathlib import Path
 from .base import Event, Outcome
 
 VERDICT = re.compile(r"^VERDICT:\s*([a-z-]+)\s*$")
-# path:line, a URL, or a test id such as tests/test_api.py::test_login (a file with an extension, not std::io).
-EVIDENCE = re.compile(r"(?:[\w./~-]+\.[A-Za-z0-9]+:\d+)|(?:https?://\S+)|(?:[\w./-]+\.[A-Za-z0-9]+::\w+)")
+# path:line (Makefile:12 too, but not a time like 12:30), a URL, or a test id such as
+# tests/test_api.py::test_login (a file with an extension, so `std::io` does not count).
+EVIDENCE = re.compile(r"(?:[\w./~-]*[A-Za-z][\w./~-]*:\d+)|(?:https?://\S+)|(?:[\w./-]+\.[A-Za-z0-9]+::\w+)")
 
 
 @dataclass(frozen=True)
