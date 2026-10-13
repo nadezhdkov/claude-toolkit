@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `continuity` hook: after a compaction, puts back the branch, commit,
+  uncommitted files, the `ctk verify` status of every check (stale ones
+  marked) and the branch's handoff file. The `handoff` skill now asks for a
+  source and date per fact, struck-through superseded decisions and
+  `ctk verify` lines with their commit.
 - `ctk diffcheck`: deterministic checks of the current change against a base
   (default: the merge-base with the default branch, uncommitted and untracked
   files included): public symbols removed or with changed signatures and where

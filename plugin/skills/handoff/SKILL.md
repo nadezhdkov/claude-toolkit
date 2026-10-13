@@ -49,17 +49,23 @@ Updated: <YYYY-MM-DD HH:MM> · Commit: <short sha> · PR: <link or none>
 
 ## Decisions
 - <decision> — <why; what was rejected>
+- ~~<an earlier decision>~~ — superseded by <which, when>: keep it struck through, do not delete it
 
 ## Open questions
 - <for the user, or unknowns to investigate>
 
 ## Verify
-- <commands that prove the current state, e.g. `ctk runq -- pytest tests/x.py`>
+- <`ctk verify` lines, with the commit they ran on; a result from another commit is history, not proof>
 
 ## Gotchas
 - <traps found on the way: flaky tests, env quirks, misleading names>
 ```
 
-Rules: absolute dates (never "tomorrow"), no secrets or tokens, no copied
+After a compaction, the ctk `continuity` hook puts this file back into the
+conversation together with the branch, the commit and `ctk verify`, so keep it
+current before long tasks.
+
+Rules: every fact has a source (a file, a command, a commit) and a date;
+absolute dates (never "tomorrow"), no secrets or tokens, no copied
 command output beyond a line or two (link the `ctk runq` log path instead).
 If the project tracks the handoff in git, commit it on the same branch.

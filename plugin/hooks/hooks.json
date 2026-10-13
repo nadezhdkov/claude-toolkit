@@ -1,5 +1,5 @@
 {
-  "description": "claude-toolkit quality hooks: format edited files, run affected tests, guard destructive commands, scan commits for secrets, desktop notifications, subagent output contracts. Logic lives in `ctk hook <name>`.",
+  "description": "claude-toolkit quality hooks: format edited files, run affected tests, guard destructive commands, scan commits for secrets, desktop notifications, subagent output contracts, verified state after a compaction. Logic lives in `ctk hook <name>`.",
   "hooks": {
     "PreToolUse": [
       {
@@ -82,6 +82,18 @@
             "type": "command",
             "command": "command -v ctk >/dev/null 2>&1 && CTK_PLUGIN_ROOT=\"${CLAUDE_PLUGIN_ROOT}\" ctk hook agent-contract; exit 0",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v ctk >/dev/null 2>&1 && ctk hook continuity; exit 0",
+            "timeout": 15
           }
         ]
       }
