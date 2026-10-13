@@ -308,3 +308,33 @@ def test_this_repository_maps_runq_to_its_tests():
     if not plans:
         pytest.skip("no project .venv with pytest (for example a non-uv environment)")
     assert plans[0].cwd == ROOT and plans[0].command[-1] == "tests/test_runq.py"
+
+
+# --- continuity ---------------------------------------------------------------------
+
+
+def compact(cwd, source="compact"):
+    return json.dumps({"hook_event_name": "SessionStart", "source": source, "session_id": "s", "cwd": str(cwd)})
+
+
+def test_continuity_only_after_compaction_and_only_with_something_to_say(tmp_path):
+    repo = git_repo(tmp_path / "repo")
+    assert hooks.dispatch("continuity", compact(repo, "startup")).stdout == ""
+    assert hooks.dispatch("continuity", compact(repo)).stdout == "", "clean tree, no checks, no handoff"
+    assert hooks.dispatch("continuity", compact(tmp_path)).stdout == "", "not a git repository"
+
+
+def test_continuity_brings_back_branch_checks_and_handoff(tmp_path, monkeypatch):
+    from claude_toolkit import verify
+
+    repo = git_repo(tmp_path / "repo")
+    subprocess.run(["git", "-C", str(repo), "switch", "-q", "-c", "feat/x"], check=True)
+    verify.record([sys.executable, "-c", "print('3 passed')"], repo, 0, "3 passed in 0.1s\n", 0.1)
+    handoff = repo / ".claude" / "handoff" / "feat-x.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text("# feat/x — goal\n\n## Next\n1. finish the parser\n")
+    out = json.loads(hooks.dispatch("continuity", compact(repo)).stdout)
+    text = out["hookSpecificOutput"]["additionalContext"]
+    assert out["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert "branch feat/x" in text and "finish the parser" in text and "written just now" in text
+    assert "~ stale" in text, "the handoff file itself changed the tree after the check ran"

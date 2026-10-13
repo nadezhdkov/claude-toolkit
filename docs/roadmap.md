@@ -50,6 +50,21 @@ Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 - ✅ `ctk libdocs` ([docs](commands/libdocs.md)): installed version, source path, README and types of a
   dependency, to stop writing code against the wrong API version.
 
+## 🚧 Phase 7 — context and evidence
+
+From the context-engineering review, measured with the benchmark and real
+transcripts (2.5 billion tokens read in a week, 99% from cache, a median peak
+window of 560k tokens, Bash outputs re-read ~390M times over):
+
+- ✅ `benchmark/`: fixed tasks with and without the plugin in Docker.
+- ✅ `ctk sessions`: real tokens, peak window, compactions, re-read cost.
+- ✅ `ctk map`: budgeted repository map and symbol uses.
+- ✅ Always-on context halved (1,570 → 820 tokens), measured by the benchmark.
+- ✅ `ctk verify`: evidence ledger of checks per code state.
+- ✅ `ctk diffcheck`: deterministic checks of a change.
+- ✅ `continuity` hook: verified state after a compaction.
+- ⏳ `ctk recall`, only if the measurements show search is still missing.
+
 ## ✅ Phase 6 — subagents
 
 `reviewer`, `researcher` and `test-runner`, each with an output contract
