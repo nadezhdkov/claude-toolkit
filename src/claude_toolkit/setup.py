@@ -38,6 +38,7 @@ Prefer these commands (installed by claude-toolkit) over ad-hoc scripts:
 - `ctk sessions [--since DAYS]`: usage metrics from Claude Code transcripts (counts only).
 - `ctk shoot web <url|file> | godot [project] | desktop -- <cmd>`: deterministic screenshot to read after changing a UI; `--baseline shots/x.png` compares (exit 1 with box and diff image when it changed); `ctk shoot sheet` combines several images into one.
 - `ctk sandbox [--net] [--dir DIR] -- <cmd>`: run untrusted code (unknown repositories' tests or builds, downloaded scripts) with no network, an empty home, the system read-only and resource limits.
+- `ctk map [path]`: before exploring an unfamiliar or large repository, read its compact map of files and central symbols; `ctk map --uses NAME` shows where a symbol is defined and used and which tests touch it.
 - `ctk libdocs <package> [--find SYMBOL]`: before using a dependency's API, check the installed version, its README and the real signatures instead of relying on memory.
 - `ctk audiocheck <files|dirs> [--loop] [--target LUFS] [--images]`: loudness, clipping, silence and loop clicks of audio files; run it after generating or editing audio instead of assuming it sounds right.
 

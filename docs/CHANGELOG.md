@@ -8,6 +8,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk map`: a compact, line-budgeted map of a repository's source files and
+  their central symbols (Python via `ast`; JS/TS, Go, Rust, GDScript, Java and
+  Kotlin via patterns), ranked by how many files mention a name and how few
+  define it, breadth-first across directories, with tests, docs and code-less
+  directories summarised. `--uses SYMBOL` lists the definition, the uses and
+  the tests that touch it. Used by the `onboard-repo` skill and the
+  `researcher` agent.
 - `ctk sessions` reports real token usage from the transcripts' usage
   records (fresh input, cache writes, cache reads, output, cache hit rate),
   tokens per session and the peak context window, compactions, repeated reads

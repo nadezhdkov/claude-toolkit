@@ -81,6 +81,7 @@ Run `ctk` on its own for an overview:
 | [`ctk audiocheck`](docs/commands/audiocheck.md) | Loudness, clipping, silence and loop seams of audio files, with waveform and spectrogram images |
 | [`ctk sandbox`](docs/commands/sandbox.md) | Runs untrusted code without network, with a read-only system, an empty home and resource limits |
 | [`ctk libdocs`](docs/commands/libdocs.md) | Installed version, declared constraint, README and API of a dependency; where a symbol is defined |
+| [`ctk map`](docs/commands/map.md) | Compact map of a repository's files and central symbols; where a symbol is used and which tests touch it |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 

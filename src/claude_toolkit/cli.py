@@ -97,6 +97,12 @@ def _libdocs(args: argparse.Namespace) -> int:
     return libdocs.run(args)
 
 
+def _map(args: argparse.Namespace) -> int:
+    from . import map as repo_map
+
+    return repo_map.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -121,6 +127,7 @@ OVERVIEW = (
     ("audiocheck", "loudness, clipping, silence and loop seams of audio files, plus images"),
     ("sandbox", "run untrusted code without network, with a read-only system and limits"),
     ("libdocs", "installed version, README and API of a dependency, from its own files"),
+    ("map", "compact map of a repository's files and symbols; where a symbol is used"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -279,6 +286,13 @@ def build_parser() -> argparse.ArgumentParser:
     view.add_argument("--find", metavar="SYMBOL", help="where SYMBOL (e.g. Session.get) is defined, with its docs")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_libdocs)
+
+    p = sub.add_parser("map", help="compact map of files and symbols, ranked by use; --uses for one symbol")
+    p.add_argument("path", nargs="?", default=".", help="repository directory (default .)")
+    p.add_argument("--budget", type=int, default=120, metavar="LINES", help="maximum lines (default 120)")
+    p.add_argument("--uses", metavar="SYMBOL", help="where SYMBOL is defined and used, and which tests touch it")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_map)
 
     from .hooks import HOOKS
 

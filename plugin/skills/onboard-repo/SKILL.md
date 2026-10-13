@@ -29,11 +29,14 @@ CI workflows (`.github/workflows/`, `.gitlab-ci.yml`), then task runners
 
 ## 4. Layout
 
+Start from `ctk map` (files and their central symbols, within a line budget)
+and open only what it points to. Then note:
+
 - Top-level directories and what each holds (one line each).
 - Entry points (main modules, servers, CLI, scenes) and the main data flow.
 - Where tests live and how they map to source.
 - Generated or vendored directories that must not be edited.
-Use `git ls-files | head -200` and directory listings, not reading every file.
+Use `ctk map --uses NAME` to find where something is handled instead of reading files in turn.
 
 ## 5. Baseline
 
