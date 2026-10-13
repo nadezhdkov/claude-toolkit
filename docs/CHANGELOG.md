@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Process skills in the `ctk` plugin: `debug`, `ship`, `handoff`,
+  `onboard-repo`, `visual-qa` and `security-pass` (`/ctk:<name>`), which use
+  the `ctk` commands for their deterministic steps and defer to a project's own
+  process.
+
 - `ctk shoot`: deterministic screenshots of web pages (Playwright's Chromium,
   run through `uv run --with playwright==1.63.0`), Godot 4 scenes (movie
   writer at a fixed frame rate) and desktop programs (private Xvfb display);

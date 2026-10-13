@@ -171,13 +171,21 @@ claude plugin install ctk@ctk
 Per-project settings and opt-out live in `.claude-toolkit.toml`; see
 [docs/commands/hooks.md](docs/commands/hooks.md).
 
+## Skills
+
+The plugin also ships process skills that Claude loads when a task fits, or
+that you call as `/ctk:<name>`: `debug` (root cause before fix), `ship`
+(checks, review, PR), `handoff` (progress file across sessions),
+`onboard-repo`, `visual-qa` (look at screenshots before calling UI work done)
+and `security-pass`. They defer to a project's own process when it has one.
+See [docs/skills.md](docs/skills.md).
+
 ## Roadmap
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
-installer; then came the quality hooks plugin, `ctk shoot` and `ctk audiocheck`.
-Next come process skills, a
-sandbox for untrusted code and subagents with output contracts, delivered as the
-Claude Code plugin. See [docs/roadmap.md](docs/roadmap.md).
+installer; then came the quality hooks plugin, `ctk shoot`, `ctk audiocheck` and
+the process skills. Next come `ctk sandbox` for untrusted code, `ctk libdocs`
+for dependency APIs, and subagents with output contracts. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Development
 

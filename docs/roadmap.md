@@ -38,10 +38,10 @@ Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 - ✅ `ctk audiocheck` ([docs](commands/audiocheck.md)): loudness, peaks/clipping, silence, loop seams, plus
   spectrogram and waveform PNGs.
 
-## ⏳ Phase 4 — process skills
+## ✅ Phase 4 — process skills
 
 `debug`, `ship`, `handoff` (progress file across sessions), `onboard-repo`,
-then `visual-qa` and `security-pass`.
+`visual-qa` and `security-pass`, in the `ctk` plugin ([docs/skills.md](skills.md)).
 
 ## ⏳ Phase 5 — isolation and docs
 
