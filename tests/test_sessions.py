@@ -35,7 +35,7 @@ def demo_session(tmp_path):
         tool_use(3, "Edit", file_path="/a"),
         tool_result(3, "ok"),
         {"type": "attachment", "attachment": {"type": "edited_text_file", "filename": "/a", "snippet": "secret"}},
-        tool_use(4, "Bash", command="cd x && ctk runq -- pytest; ctk doctor"),
+        tool_use(4, "Bash", command="cd x && ctk runq -- pytest; ctk doctor; git commit -m 'ctk as a tool'"),
         tool_result(4, [{"type": "text", "text": "z" * 50}]),
         tool_use(5, "Skill", skill="debug"),
         tool_use(6, "Agent", subagent_type="Explore", prompt="private words"),

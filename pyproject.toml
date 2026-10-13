@@ -1,6 +1,6 @@
 [project]
 name = "claude-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "General-purpose tools, hooks, skills and subagents that make Claude Code more effective in any project"
 readme = "README.md"
 license = "MIT"

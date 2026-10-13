@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import platform
 import re
 import shutil
@@ -30,7 +29,13 @@ def confirm(question: str, *, assume_yes: bool) -> bool:
         return True
     if not sys.stdin.isatty():
         raise ConfirmationRequired(question)
-    answer = input(f"{question} [y/N] ").strip().lower()
+    from .style import Style
+
+    st = Style.detect()
+    prompt = (
+        f"{st.accent('?', bold=True)} {st.bold(question)} {st.muted('[y/N]')} " if st.enabled else f"{question} [y/N] "
+    )
+    answer = input(prompt).strip().lower()
     return answer in ("y", "yes", "s", "sim")
 
 
@@ -92,11 +97,3 @@ def parse_version(text: str | None) -> tuple[int, int, int] | None:
     if not match:
         return None
     return tuple(int(part or 0) for part in match.groups())  # type: ignore[return-value]
-
-
-def use_color() -> bool:
-    return sys.stdout.isatty() and "NO_COLOR" not in os.environ
-
-
-def paint(text: str, code: str) -> str:
-    return f"\033[{code}m{text}\033[0m" if use_color() else text

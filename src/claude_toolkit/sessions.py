@@ -19,6 +19,9 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import COMMANDS
+from .style import Style
+
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 EXPLORE_TOOLS = {"Read", "Grep", "Glob", "LSP"}
 EXPLORE_COMMANDS = {"cat", "head", "tail", "sed", "grep", "rg", "find", "fd", "ls", "tree", "wc"}
@@ -130,7 +133,8 @@ def parse_session(path: Path) -> Session:
                     elif name == "Bash":
                         command = str(data.get("command", ""))
                         for match in CTK_COMMAND.finditer(command):
-                            session.ctk_commands[match.group(1)] += 1
+                            if match.group(1) in COMMANDS:
+                                session.ctk_commands[match.group(1)] += 1
                 elif block.get("type") == "tool_result":
                     size = _result_length(block.get("content"))
                     session.result_chars += size
@@ -213,7 +217,11 @@ def _pairs(items: list[tuple[str, int]]) -> str:
     return ", ".join(f"{name} {count}" for name, count in items) or "-"
 
 
-def render(summary: Summary, label: str) -> str:
+def render(summary: Summary, label: str, style: Style | None = None) -> str:
+    st = style or Style.detect()
+    if st.enabled:
+        return _render_styled(summary, label, st)
+
     def tokens(chars: float) -> str:
         return f"~{chars / 4:,.0f} tokens"
 
@@ -240,6 +248,74 @@ def render(summary: Summary, label: str) -> str:
     ]
     width = max(len(name) for name, _ in rows)
     return "\n".join([f"ctk sessions · {label}", *(f"{name:<{width}}  {value}" for name, value in rows)])
+
+
+def _human(value: float) -> str:
+    for unit, size in (("B", 1e9), ("M", 1e6), ("k", 1e3)):
+        if abs(value) >= size:
+            return f"{value / size:.1f}{unit}"
+    return f"{value:,.0f}"
+
+
+def _render_styled(summary: Summary, label: str, st: Style) -> str:
+    def row(name: str, value: str) -> str:
+        return f"    {st.muted(name.ljust(18))}{value}"
+
+    def section(title: str) -> str:
+        return f"  {st.accent(title, bold=True)}"
+
+    rate = summary.error_rate
+    rate_text = f"{rate:.1%}"
+    rate_colored = st.ok(rate_text) if rate < 0.02 else st.warn(rate_text) if rate < 0.05 else st.err(rate_text)
+    notices = summary.changed_on_disk_per_session
+    notice_text = f"{notices:g} / session"
+    notice_colored = st.ok(notice_text) if notices < 2 else st.warn(notice_text) if notices < 6 else st.err(notice_text)
+    avg_chars, all_chars = summary.bash_output_avg_chars, summary.tool_result_chars
+    median_explore = "-" if summary.median_explore_before_edit is None else f"{summary.median_explore_before_edit:g}"
+    median_reads = "-" if summary.median_reads_before_edit is None else f"{summary.median_reads_before_edit:g}"
+    lines = [
+        st.header("ctk sessions", label),
+        "",
+        section("Activity"),
+        row("sessions", f"{st.bold(f'{summary.sessions:,}')} {st.muted(f'(+{summary.subagent_sessions} subagent)')}"),
+        row(
+            "tool calls",
+            f"{st.bold(f'{summary.tool_calls:,}')} {st.muted('·')} {summary.tool_errors:,} errors ({rate_colored})",
+        ),
+        "",
+        section("Context"),
+        row(
+            "Bash output",
+            f"avg {st.bold(f'{avg_chars:,.0f}')} chars {st.muted(f'~{avg_chars / 4:,.0f} tokens')}"
+            f" {st.muted('·')} max {summary.bash_output_max_chars:,}",
+        ),
+        row(
+            "all tool results",
+            f"{st.bold(_human(all_chars))} chars {st.muted(f'~{_human(all_chars / 4)} tokens')}",
+        ),
+        row("changed on disk", f"{st.bold(str(summary.changed_on_disk_notices))} ({notice_colored})"),
+        "",
+        section("Before the first edit (median)"),
+        row("explore calls", st.bold(median_explore)),
+        row("Read calls", st.bold(median_reads)),
+        "",
+        section("Top tools"),
+    ]
+    top = summary.top_tools
+    peak = top[0][1] if top else 0
+    name_w = max((len(name) for name, _ in top), default=0)
+    for name, count in top:
+        lines.append(f"    {name.ljust(name_w)}  {st.bar(count, peak, 26).ljust(26)} {st.muted(f'{count:,}')}")
+    lines.append("")
+    for title, items in (
+        ("Skills", summary.skills),
+        ("Subagents", summary.subagents),
+        ("MCP servers", summary.mcp_servers),
+        ("ctk", summary.ctk_commands),
+    ):
+        listed = st.muted(" · ").join(f"{st.accent2(name)} {st.muted(str(count))}" for name, count in items)
+        lines.append(f"  {st.accent(title.ljust(12), bold=True)}{listed or st.muted('none')}")
+    return "\n".join(lines)
 
 
 def weekly_csv(sessions: list[Session]) -> str:

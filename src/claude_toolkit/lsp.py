@@ -14,7 +14,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from .common import Host, confirm, detect_host, paint, which
+from .common import Host, confirm, detect_host, which
+from .style import Style, shorten_home
 
 MARKETPLACE = "claude-plugins-official"
 SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "dist", "build", "target", "__pycache__", ".godot", "vendor"}
@@ -183,23 +184,64 @@ def status(root: Path, claude_home: Path | None = None) -> list[Status]:
     ]
 
 
-def render(root: Path, statuses: list[Status], host: Host) -> str:
+def render(root: Path, statuses: list[Status], host: Host, style: Style | None = None) -> str:
+    st = style or Style.detect()
+    if st.enabled:
+        return _render_styled(root, statuses, host, st)
     lines = [f"ctk lsp · {root}"]
     if not statuses:
         lines.append("no languages with an official LSP plugin detected")
         return "\n".join(lines)
-    for st in statuses:
-        mark = paint("✓", "32") if st.ready else paint("✗", "31")
-        parts = [f"{mark} {st.server.language} ({st.files} files)"]
-        parts.append(f"server {st.server.binary}: {'ok' if st.binary else 'missing'}")
-        parts.append(f"plugin {st.server.plugin}: {'ok' if st.plugin else 'missing'}")
+    for status in statuses:
+        mark = "✓" if status.ready else "✗"
+        parts = [f"{mark} {status.server.language} ({status.files} files)"]
+        parts.append(f"server {status.server.binary}: {'ok' if status.binary else 'missing'}")
+        parts.append(f"plugin {status.server.plugin}: {'ok' if status.plugin else 'missing'}")
         lines.append(" · ".join(parts))
-        if not st.binary:
-            lines.append(f"    install server: {st.server.install_command(host) or 'see the language docs'}")
-        if not st.plugin:
-            lines.append(f"    install plugin: claude plugin install {st.server.plugin}@{MARKETPLACE}")
-    if any(not st.ready for st in statuses):
+        if not status.binary:
+            lines.append(f"    install server: {status.server.install_command(host) or 'see the language docs'}")
+        if not status.plugin:
+            lines.append(f"    install plugin: claude plugin install {status.server.plugin}@{MARKETPLACE}")
+    if any(not status.ready for status in statuses):
         lines.append("run `ctk lsp --install` to install the missing pieces (asks before each change)")
+    return "\n".join(lines)
+
+
+def _render_styled(root: Path, statuses: list[Status], host: Host, st: Style) -> str:
+    lines = [st.header("ctk lsp", shorten_home(root)), ""]
+    if not statuses:
+        lines.append(f"  {st.muted('no languages with an official LSP plugin detected')}")
+        return "\n".join(lines)
+
+    def piece(ok: bool, name: str, width: int) -> str:
+        padded = name.ljust(width)
+        return f"{st.ok('✓') if ok else st.err('✗')} {padded if ok else st.err(padded)}"
+
+    lang_w = max(len(status.server.language) for status in statuses)
+    bin_w = max(len(status.server.binary) for status in statuses)
+    heading = f"    {'language'.ljust(lang_w)}  {'files':>11}   {'  server'.ljust(bin_w + 2)}     plugin"
+    lines.append(st.muted(heading))
+    for status in statuses:
+        mark = st.ok("✓", bold=True) if status.ready else st.err("✗", bold=True)
+        files = st.muted(f"{status.files:>5} files")
+        row = f"  {mark} {st.bold(status.server.language.ljust(lang_w))}  {files}   "
+        row += piece(status.binary, status.server.binary, bin_w) + "   " + piece(status.plugin, status.server.plugin, 0)
+        lines.append(row.rstrip())
+        if not status.binary:
+            hint = status.server.install_command(host)
+            lines.append(f"      {st.command(hint) if hint else st.muted('see the language documentation')}")
+        if not status.plugin:
+            lines.append(f"      {st.command(f'claude plugin install {status.server.plugin}@{MARKETPLACE}')}")
+    ready = sum(status.ready for status in statuses)
+    missing = len(statuses) - ready
+    lines.append("")
+    summary = [st.ok(f"{ready} ready", bold=True)] if ready else []
+    if missing:
+        summary.append(st.warn(f"{missing} need{'s' if missing == 1 else ''} setup", bold=True))
+    tail = (
+        f"   {st.accent('→')} {st.bold('ctk lsp --install')} {st.muted('(asks before each change)')}" if missing else ""
+    )
+    lines.append("  " + st.muted(" · ").join(summary) + tail)
     return "\n".join(lines)
 
 

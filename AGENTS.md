@@ -18,6 +18,15 @@ uv run ctk <command>                                  # run the CLI from the che
 
 ## Rules that must not regress
 
+- **Develop in a separate worktree.** The maintainer's `ctk` is an editable
+  install of the main checkout, so half-finished edits there break the command
+  they use every day. Work in `git worktree add ../claude-toolkit-dev -b <branch> main`
+  and let changes reach the main checkout only through merged pull requests.
+- **Styled for people, plain for agents.** Use `style.Style` for all colour and
+  decoration; with colour disabled, output must stay byte-for-byte the plain
+  format the tests expect. Regenerate README screenshots with
+  `uv run python scripts/make_screenshots.py` (synthetic data only).
+
 - **Stdlib only at runtime.** `ctk` must start fast and never break because of
   a third-party package. Dev tools (pytest, ruff) live in the `dev` group.
 - **Never change the system without asking.** Anything that writes outside the
