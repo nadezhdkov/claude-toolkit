@@ -16,4 +16,5 @@ COMMANDS = (
     "libdocs",
     "map",
     "verify",
+    "diffcheck",
 )

@@ -22,7 +22,8 @@ below only to fill gaps. Stop at the first failing step and explain it.
    every check ✓ for the current code, not `~ stale`; a failure you believe is
    unrelated still gets reported, not hidden.
    For UI changes run the `visual-qa` skill; for audio, `ctk audiocheck`.
-4. **Review the diff.** `git status` and `git diff <base>...`:
+4. **Review the diff.** `ctk diffcheck` first (removed API still in use, risky
+   files, debug leftovers, missing tests), then `git status` and `git diff <base>...`:
    - only files this change needs; no debug code, stray logs, commented-out
      code, unrelated reformatting, generated files or secrets;
    - tests cover the new behaviour;

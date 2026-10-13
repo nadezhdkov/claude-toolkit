@@ -13,6 +13,7 @@ from input to impact; no generic advice.
 
 - Secrets: `gitleaks git --staged --redact` or `gitleaks detect --redact`
   on the branch (the ctk `secrets` hook already scans each commit).
+- Changed lockfiles, manifests, CI, container and `.env` files: `ctk diffcheck`.
 - Dependencies: if lockfiles changed, list added and upgraded packages
   (`git diff <base>... -- '*lock*' '*requirements*' go.sum Cargo.lock`).
   Run the ecosystem's audit (`npm audit`, `pip-audit`, `cargo audit`,
