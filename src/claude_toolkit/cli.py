@@ -79,6 +79,12 @@ def _shoot(args: argparse.Namespace) -> int:
     return shoot.run(args)
 
 
+def _audiocheck(args: argparse.Namespace) -> int:
+    from . import audiocheck
+
+    return audiocheck.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -100,6 +106,7 @@ OVERVIEW = (
     ("lsp", "language servers and Claude Code LSP plugins a project needs"),
     ("sessions", "counts-only metrics from Claude Code transcripts"),
     ("shoot", "deterministic screenshots (web, Godot, desktop), baselines, contact sheets"),
+    ("audiocheck", "loudness, clipping, silence and loop seams of audio files, plus images"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -215,6 +222,21 @@ def build_parser() -> argparse.ArgumentParser:
     k.add_argument("--columns", type=int, default=3)
     k.add_argument("--thumb-width", type=int, default=400)
     p.set_defaults(func=_shoot)
+
+    p = sub.add_parser("audiocheck", help="loudness, clipping, silence and loop seams of audio files")
+    p.add_argument("paths", nargs="+", help="audio files or directories (searched recursively)")
+    p.add_argument("--target", type=float, metavar="LUFS", help="required integrated loudness, e.g. -16")
+    p.add_argument("--lufs-tolerance", type=float, default=1.0, metavar="LU", help="allowed distance (default 1)")
+    p.add_argument("--max-true-peak", type=float, default=-1.0, metavar="DBTP", help="warn above (default -1)")
+    p.add_argument("--max-lead", type=float, default=0.1, metavar="S", help="leading silence warning (default 0.1)")
+    p.add_argument("--max-trail", type=float, default=1.0, metavar="S", help="trailing silence warning (default 1)")
+    p.add_argument("--max-gap", type=float, default=2.0, metavar="S", help="report inner silences this long")
+    p.add_argument("--silence-db", type=float, default=-60.0, metavar="DB", help="silence threshold (default -60)")
+    p.add_argument("--loop", action="store_true", help="check the loop point (end back to start)")
+    p.add_argument("--images", nargs="?", const="", metavar="DIR", help="write waveform and spectrogram PNGs")
+    p.add_argument("--strict", action="store_true", help="warnings also fail (exit 1)")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_audiocheck)
 
     from .hooks import HOOKS
 
