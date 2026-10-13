@@ -65,6 +65,9 @@ jobs:
       - name: Unit and integration tests (no skips allowed)
         if: matrix.python == '3.12'
         shell: bash
+        env:
+          # No desktop here to show "low on memory" notifications: test a real OOM kill.
+          CTK_TEST_OOM: "1"
         run: |
           uv run pytest -v -rs | tee pytest.log
           if grep -q ' SKIPPED' pytest.log; then
