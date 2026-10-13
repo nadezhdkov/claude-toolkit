@@ -124,6 +124,8 @@ always-on context was halved).
 
 ### Fixed
 
+- `ctk sandbox` now explains a memory-limit kill also when systemd stops the
+  scope with SIGTERM (exit 143), not only on the kernel's SIGKILL (137).
 - `ctk runq` gave commands started in the same second the same log file, so
   the later one overwrote the earlier log; logs now get a `-2`, `-3`… suffix.
 - `ctk libdocs` crashed on an unreadable `package.json` inside `node_modules`.
