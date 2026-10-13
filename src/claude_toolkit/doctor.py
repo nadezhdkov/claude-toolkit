@@ -345,10 +345,9 @@ TOOLKIT_DEPENDENCIES = (
     Dependency("bwrap", "sandbox for untrusted code (upcoming `ctk sandbox`)", False, _pm("bubblewrap"), shipped=False),
     Dependency(
         "Xvfb",
-        "headless desktop screenshots (upcoming `ctk shoot`)",
+        "headless desktop and Godot screenshots (`ctk shoot`)",
         False,
         _pm("xorg-server-xvfb", "xvfb", "xorg-x11-server-Xvfb", "--cask xquartz"),
-        shipped=False,
     ),
     Dependency("gitleaks", "secret scanning before commits (`secrets` hook)", False, _pm("gitleaks")),
 )

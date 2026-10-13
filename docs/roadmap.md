@@ -31,9 +31,9 @@ closes after the warn-only week and a `ctk sessions` before/after measurement.
 
 Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 
-## ⏳ Phase 3 — verification
+## 🚧 Phase 3 — verification
 
-- `ctk shoot`: deterministic screenshots (web via Playwright, Godot, headless
+- ✅ `ctk shoot` ([docs](commands/shoot.md)): deterministic screenshots (web via Playwright, Godot, headless
   desktop), contact sheets and baseline comparison with tolerance and masks.
 - `ctk audiocheck`: loudness, peaks/clipping, silence, loop seams, plus
   spectrogram and waveform PNGs.

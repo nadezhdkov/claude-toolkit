@@ -73,6 +73,12 @@ def _setup(args: argparse.Namespace) -> int:
     return setup.run(assume_yes=args.yes, dry_run=args.dry_run, uninstall=args.uninstall)
 
 
+def _shoot(args: argparse.Namespace) -> int:
+    from . import shoot
+
+    return shoot.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -93,6 +99,7 @@ OVERVIEW = (
     ("runq", "run a command; print failures, summary and the full-log path"),
     ("lsp", "language servers and Claude Code LSP plugins a project needs"),
     ("sessions", "counts-only metrics from Claude Code transcripts"),
+    ("shoot", "deterministic screenshots (web, Godot, desktop), baselines, contact sheets"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -163,6 +170,51 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="only print the plan")
     p.add_argument("--uninstall", action="store_true", help="remove what setup added")
     p.set_defaults(func=_setup)
+
+    p = sub.add_parser("shoot", help="deterministic screenshots, baseline comparison and contact sheets")
+    kinds = p.add_subparsers(dest="kind", metavar="<kind>", required=True)
+    baseline = argparse.ArgumentParser(add_help=False)
+    baseline.add_argument("--baseline", metavar="PNG", help="compare with this image (created when missing)")
+    baseline.add_argument("--update", action="store_true", help="overwrite the baseline with this capture")
+    compare = argparse.ArgumentParser(add_help=False)
+    compare.add_argument("--threshold", type=int, default=8, help="per-channel difference ignored (0-255, default 8)")
+    compare.add_argument("--tolerance", type=float, default=0.1, help="%% of pixels allowed to differ (default 0.1)")
+    compare.add_argument("--mask", action="append", metavar="X,Y,W,H", help="ignore a rectangle (repeatable)")
+    capture = argparse.ArgumentParser(add_help=False)
+    capture.add_argument("-o", "--output", metavar="PNG", help="where to write (default: the ctk cache)")
+    capture.add_argument("--size", help="viewport/screen size (default 1280x720; Godot: the project's)")
+
+    k = kinds.add_parser("web", parents=[capture, baseline, compare], help="a URL or HTML file in Chromium")
+    k.add_argument("target", help="URL, host:port or path to an HTML file")
+    k.add_argument("--scale", type=float, default=1, help="device scale factor (default 1)")
+    k.add_argument("--full-page", action="store_true")
+    k.add_argument("--wait-for", metavar="SELECTOR", help="wait for this CSS selector before capturing")
+    k.add_argument("--delay", type=int, default=0, metavar="MS", help="extra wait after load")
+    k.add_argument("--mask-selector", action="append", metavar="SELECTOR", help="paint over elements (repeatable)")
+    k.add_argument("--dark", action="store_true", help="prefers-color-scheme: dark")
+    k.add_argument("--timeout", type=float, default=30, help="seconds for load and selectors (default 30)")
+    k.add_argument("-y", "--yes", action="store_true", help="install the browser without asking if missing")
+
+    k = kinds.add_parser("godot", parents=[capture, baseline, compare], help="a Godot 4 project or scene")
+    k.add_argument("project", nargs="?", default=".", help="directory with project.godot (default .)")
+    k.add_argument("--scene", metavar="RES", help="scene to run, e.g. res://ui/menu.tscn (default: main scene)")
+    k.add_argument("--frames", type=int, default=60, help="frames to run at 60 fps before capturing (default 60)")
+
+    k = kinds.add_parser("desktop", parents=[capture, baseline, compare], help="any program on a private Xvfb display")
+    k.add_argument("--delay", type=float, default=2, help="seconds to wait before capturing (default 2)")
+    k.add_argument("command", nargs=argparse.REMAINDER, help="-- <command> [args...]")
+
+    k = kinds.add_parser("compare", parents=[compare], help="compare two PNG files")
+    k.add_argument("baseline_image", metavar="baseline")
+    k.add_argument("actual")
+    k.add_argument("--diff", metavar="PNG", help="where to write the diff image")
+
+    k = kinds.add_parser("sheet", help="contact sheet of several PNG files")
+    k.add_argument("images", nargs="+")
+    k.add_argument("-o", "--output", metavar="PNG")
+    k.add_argument("--columns", type=int, default=3)
+    k.add_argument("--thumb-width", type=int, default=400)
+    p.set_defaults(func=_shoot)
 
     from .hooks import HOOKS
 
