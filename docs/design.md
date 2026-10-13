@@ -61,6 +61,7 @@ claude-toolkit/
 │   ├── sandbox.py        # bubblewrap jail with cgroup limits
 │   ├── libdocs.py        # installed dependency: version, README, API
 │   ├── map.py            # repository map and symbol uses
+│   ├── verify.py         # evidence ledger: checks per code state
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers

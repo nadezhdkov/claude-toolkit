@@ -210,6 +210,10 @@ def run_tests(event: Event) -> Outcome:
             done = runq.execute(plan.command, cwd=plan.cwd, timeout=remaining)
         except OSError:
             continue
+        if not done.timed_out:
+            from ..verify import record
+
+            record(plan.command, plan.cwd, done.exit_code, done.output, done.elapsed, done.log_path)
         if done.timed_out:
             timeouts.append(f"{plan.label} timed out after {remaining:.0f}s (log: {done.log_path})")
         elif done.exit_code not in plan.ok_codes:

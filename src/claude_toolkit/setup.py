@@ -34,6 +34,7 @@ Use these `ctk` commands instead of ad-hoc scripts:
 
 - `ctk doctor [path]`: toolchain and dependency check; run it first when a build or test fails oddly.
 - `ctk runq -- <cmd>`: long test, build or lint output reduced to failures, summary and log path.
+- `ctk verify [run]`: what is verified for the code as it is now; never claim checks pass without a fresh ✓ there.
 - `ctk map [path]`, `ctk map --uses NAME`: repository map before exploring; where a symbol is used.
 - `ctk libdocs <pkg> [--find SYMBOL]`: installed version and real API of a dependency, before using it.
 - `ctk shoot web|godot|desktop`: screenshot after a UI change (`--baseline` compares); `ctk audiocheck <files>` for audio.

@@ -103,6 +103,12 @@ def _map(args: argparse.Namespace) -> int:
     return repo_map.run(args)
 
 
+def _verify(args: argparse.Namespace) -> int:
+    from . import verify
+
+    return verify.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -128,6 +134,7 @@ OVERVIEW = (
     ("sandbox", "run untrusted code without network, with a read-only system and limits"),
     ("libdocs", "installed version, README and API of a dependency, from its own files"),
     ("map", "compact map of a repository's files and symbols; where a symbol is used"),
+    ("verify", "what is verified for the current code: fresh, failing, stale or never run"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -293,6 +300,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--uses", metavar="SYMBOL", help="where SYMBOL is defined and used, and which tests touch it")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_map)
+
+    p = sub.add_parser("verify", help="checks recorded for the current code state; `run` runs the project's checks")
+    p.add_argument("action", nargs="?", choices=("status", "run"), default="status")
+    p.add_argument("--path", default=".", help="directory inside the repository (default .)")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_verify)
 
     from .hooks import HOOKS
 

@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk verify`: an evidence ledger. Every `ctk runq` run (and every
+  `affected-tests` run) inside a git repository is recorded with its exit code,
+  counts, log and a hash of the exact code state (HEAD, uncommitted changes,
+  untracked files); `ctk verify` shows each check as pass, fail, stale (it ran
+  on other code) or never, and exits 1 unless all are fresh and passing.
+  `ctk verify run` runs the configured (`[verify] commands`) or detected
+  checks. The `ship` skill, the `test-runner` agent and the CLAUDE.md section
+  use it.
 - `ctk map`: a compact, line-budgeted map of a repository's source files and
   their central symbols (Python via `ast`; JS/TS, Go, Rust, GDScript, Java and
   Kotlin via patterns), ranked by how many files mention a name and how few
