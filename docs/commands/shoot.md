@@ -27,7 +27,10 @@ newest 200 kept). Claude Code can then read the PNG.
 | `desktop` | the program on a private `Xvfb` display, grabbed with ImageMagick `import` or ffmpeg after `--delay` seconds | clean screen of the requested size, nothing else running on it; the program's process group is stopped afterwards |
 
 `godot` also runs on Xvfb when it is installed, so no window appears; otherwise
-it uses the current display. Web captures report HTTP errors, console errors
+it uses the current display. Prefer Xvfb: on a desktop session the compositor's
+scaling (HiDPI) and GPU change the rendering, so a baseline only matches
+captures made in the same environment. Install Xvfb and create baselines with
+it, locally and in CI alike. Web captures report HTTP errors, console errors
 and uncaught page errors as `note:` lines.
 
 ## Baselines
@@ -81,5 +84,6 @@ ffmpeg. `ctk doctor --toolkit` lists what is missing.
 - A missing browser needs confirmation (exit `3` without a terminal).
 - Godot keeps the last frame, honours `--size` without leaving files behind
   and reports script errors.
+- A program on a private Xvfb display is captured at the requested size.
 - Two captures of an animated page with a masked clock, or of a moving Godot
-  scene, match at 0.00% (checked by hand; Chromium and Godot are not in CI).
+  scene on Xvfb, match at 0.00% (checked by hand; Chromium and Godot are not in CI).
