@@ -120,3 +120,18 @@ def test_credentials_come_from_env_file_or_environment(tmp_path, monkeypatch):
 
 def test_an_empty_transcript_has_zero_usage():
     assert bench.Transcript([]).context_tokens == 0
+
+
+def test_failed_runs_are_counted_but_not_scored():
+    case = bench.Case("c", ROOT, "p")
+    ok = bench.RunResult("c", "with", 1, 1.0, [], 5000, 10, {}, 0.1, 3, 1.0, None, "x")
+    broken = bench.RunResult("c", "with", 2, 0.5, [], 0, 0, {}, 0.0, 1, 1.0, "You've hit your session limit", "y")
+    rows, _ = bench.summarise([ok, broken], [case], ["with"])
+    assert rows[0]["with"] == {"score": 1.0, "context_tokens": 5000, "output_tokens": 10, "cost": 0.1, "turns": 3.0,
+                               "errors": 1, "runs": 1}  # fmt: skip
+    assert bench.LIMIT_ERRORS.search(broken.error)
+
+
+def test_error_results_keep_their_message():
+    line = {"type": "result", "subtype": "success", "is_error": True, "result": "You've hit your session limit"}
+    assert bench.Transcript.parse(json.dumps(line)).error == "You've hit your session limit"

@@ -37,6 +37,8 @@ CASES = HERE / "cases"
 RESULTS = HERE / "results"
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
 PLUGIN_IN_IMAGE = "/opt/ctk/plugin"
+# A run that hits these never did the task: stop the suite instead of scoring it.
+LIMIT_ERRORS = re.compile(r"session limit|usage limit|rate limit|credit balance|overloaded", re.IGNORECASE)
 USAGE_KEYS = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
 
 
@@ -195,7 +197,7 @@ class Transcript:
                 transcript.cost = float(line.get("total_cost_usd") or 0)
                 transcript.turns = int(line.get("num_turns") or 0)
                 if line.get("is_error"):
-                    transcript.error = str(line.get("subtype") or "error")
+                    transcript.error = transcript.final[:200] or str(line.get("subtype") or "error")
         transcript.usage = summed
         return transcript
 
@@ -412,18 +414,20 @@ def _mean(values: list[float]) -> float:
 
 
 def summarise(results: list[RunResult], cases: list[Case], arms: list[str]) -> tuple[list[dict], str]:
+    """Means over the runs that completed; runs with an error are counted, not scored."""
     rows = []
     for case in cases:
         row: dict = {"case": case.name}
         for arm in arms:
-            runs = [r for r in results if r.case == case.name and r.arm == arm]
+            every = [r for r in results if r.case == case.name and r.arm == arm]
+            runs = [r for r in every if not r.error]
             row[arm] = {
                 "score": round(_mean([r.score for r in runs]), 2),
                 "context_tokens": round(_mean([r.context_tokens for r in runs])),
                 "output_tokens": round(_mean([r.output_tokens for r in runs])),
                 "cost": round(_mean([r.cost for r in runs]), 4),
                 "turns": round(_mean([r.turns for r in runs]), 1),
-                "errors": sum(1 for r in runs if r.error),
+                "errors": len(every) - len(runs),
                 "runs": len(runs),
             }
         rows.append(row)
@@ -487,15 +491,30 @@ def main(argv: list[str] | None = None) -> int:
               + (f" · error: {result.error}" if result.error else ""), file=sys.stderr)  # fmt: skip
         return result
 
+    results: list[RunResult] = []
+    stopped = None
     with ThreadPoolExecutor(max_workers=max(1, args.concurrency)) as pool:
-        results = list(pool.map(job, jobs))
+        pending = [pool.submit(job, item) for item in jobs]
+        for future in pending:
+            if stopped:
+                future.cancel()
+                continue
+            result = future.result()
+            results.append(result)
+            if result.error and LIMIT_ERRORS.search(result.error):
+                stopped = result.error
+                print(f"benchmark: stopping, the account hit a limit: {stopped}", file=sys.stderr)
     rows, table = summarise(results, cases, args.arms)
     (out_dir / "results.json").write_text(json.dumps(
-        {"image": tag, "model": args.model, "arms": args.arms, "summary": rows, "runs": [asdict(r) for r in results]},
+        {"image": tag, "model": args.model, "arms": args.arms, "partial": stopped, "summary": rows,
+         "runs": [asdict(r) for r in results]},
         indent=2,
     ))  # fmt: skip
     (out_dir / "summary.txt").write_text(table + "\n")
     print(table)
+    if stopped:
+        print(f"partial results: {stopped}", file=sys.stderr)
+        return 2
     return 0
 
 
