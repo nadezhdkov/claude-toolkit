@@ -86,3 +86,12 @@ def test_old_logs_are_pruned(tmp_path, monkeypatch):
     for _ in range(3):
         runq.run([sys.executable, "-c", "print(1)"], keep_logs=2)
     assert len(list((tmp_path / "claude-toolkit" / "runq").glob("*.log"))) <= 2
+
+
+def test_commands_in_the_same_second_get_their_own_logs(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setattr(runq.time, "strftime", lambda fmt: "20260101-000000")
+    first = runq.execute([sys.executable, "-c", "print('one')"])
+    second = runq.execute([sys.executable, "-c", "print('two')"])
+    assert first.log_path != second.log_path and second.log_path.name.endswith("-2.log")
+    assert "one" in first.log_path.read_text() and "two" in second.log_path.read_text()

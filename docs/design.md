@@ -63,7 +63,7 @@ claude-toolkit/
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers
-├── plugin/               # the `ctk` Claude Code plugin: hooks (call `ctk hook`) and skills/
+├── plugin/               # the `ctk` Claude Code plugin: hooks (call `ctk hook`), skills/ and agents/
 ├── .claude-plugin/       # marketplace.json: the repository is a plugin marketplace
 ├── tests/                # pytest
 ├── docs/                 # documentation and assets

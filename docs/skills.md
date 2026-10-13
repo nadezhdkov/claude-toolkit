@@ -12,6 +12,7 @@ for the deterministic parts (`doctor`, `runq`, `lsp`, `shoot`, `audiocheck`).
 | [`handoff`](../plugin/skills/handoff/SKILL.md) | write or resume a per-branch progress file across sessions | `.claude/handoff/<branch>.md` (kept local through `.git/info/exclude`) |
 | [`onboard-repo`](../plugin/skills/onboard-repo/SKILL.md) | get oriented in an unfamiliar repository and report a short brief | `ctk doctor`, `ctk lsp`, `ctk runq` |
 | [`visual-qa`](../plugin/skills/visual-qa/SKILL.md) | check UI changes by looking at deterministic screenshots against a defect checklist and baselines | `ctk shoot` |
+| [`orchestrate`](../plugin/skills/orchestrate/SKILL.md) | coordinate the `test-runner`, `reviewer` and `researcher` subagents: when to delegate, briefs, parallel fan-out, verify loop | [subagents](agents.md) |
 | [`security-pass`](../plugin/skills/security-pass/SKILL.md) | review a change for injection, path traversal, auth gaps, secrets and supply-chain risk, with evidence | gitleaks, zizmor, ecosystem audits when installed |
 
 ## Project processes come first
@@ -23,7 +24,7 @@ keeps its own name (`/ship`); the plugin's is `/ctk:ship`.
 
 ## Cost
 
-The plugin's skill descriptions add about 650 tokens to every session
+The plugin's seven skill descriptions add about 760 tokens to every session
 (`claude plugin details ctk`); a skill's body is read only when it is used
 (about 750–1,000 tokens each). Per the design rules, a skill that `ctk
 sessions --since 30` shows unused is a candidate for removal.

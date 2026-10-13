@@ -8,12 +8,19 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Subagents in the `ctk` plugin: `test-runner` (haiku), `reviewer` and
+  `researcher`, read-only and unable to start other agents, each declaring an
+  output contract (maximum lines, allowed verdicts, evidence) in its frontmatter.
+- `agent-contract` hook (SubagentStop): sends a ctk subagent's report back once
+  when it is too long, lacks a valid `VERDICT:` line or gives a verdict without
+  `path:line`/URL evidence.
+- `orchestrate` skill: when to delegate, self-contained briefs, parallel
+  fan-out and the implement → test → review loop.
 - `ctk libdocs`: the installed version of a dependency next to its declared
   constraint, its source path, README sections and public API, for Python,
   Node (with `@types` fallback), Rust and Go; `--find SYMBOL` prints where a
   symbol is defined with its signature and docs; `--readme`, `--api`, `--json`.
   Packages are parsed, never imported or executed.
-
 - `ctk sandbox`: runs a command in a bubblewrap sandbox with no network, the
   system read-only, an empty home (toolchains read-only, credentials never
   mounted), a cleared environment, the target directory read-write (or
@@ -22,19 +29,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   half of it, at most 4G; tmpfs `/tmp` and home: an eighth, at most 1G). Project defaults in `[sandbox]` of
   `.claude-toolkit.toml`; `--dry-run` shows the mounts and the command.
 - `ctk doctor --toolkit` checks for bubblewrap.
-
-### Changed
-
-- CI installs bubblewrap and allows unprivileged user namespaces in the
-  integration job, so the sandbox tests run there.
-
-### Added
-
 - Process skills in the `ctk` plugin: `debug`, `ship`, `handoff`,
   `onboard-repo`, `visual-qa` and `security-pass` (`/ctk:<name>`), which use
   the `ctk` commands for their deterministic steps and defer to a project's own
   process.
-
 - `ctk shoot`: deterministic screenshots of web pages (Playwright's Chromium,
   run through `uv run --with playwright==1.63.0`), Godot 4 scenes (movie
   writer at a fixed frame rate) and desktop programs (private Xvfb display);
@@ -48,9 +46,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
   jumps at the loop point; `--target` loudness, `--strict`, `--json` and
   `--images` (waveform and spectrogram PNGs).
 - `ctk doctor --toolkit` checks for Xvfb and ffmpeg.
-
-### Added
-
 - The `ctk` Claude Code plugin (`plugin/`, with the repository as its
   marketplace) and `ctk hook <name>`, the logic behind its hooks:
   `format-file` (format the edited file with the project's formatter),
@@ -68,8 +63,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- CI installs bubblewrap and allows unprivileged user namespaces in the
+  integration job, so the sandbox tests run there.
 - `ctk` loads command modules lazily, roughly halving start-up time (hooks run
   on every tool call).
+
+### Fixed
+
+- `ctk runq` gave commands started in the same second the same log file, so
+  the later one overwrote the earlier log; logs now get a `-2`, `-3`… suffix.
+- `ctk libdocs` crashed on an unreadable `package.json` inside `node_modules`.
 
 ## [0.2.0] - 2026-10-13
 

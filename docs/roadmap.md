@@ -50,7 +50,8 @@ Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 - ✅ `ctk libdocs` ([docs](commands/libdocs.md)): installed version, source path, README and types of a
   dependency, to stop writing code against the wrong API version.
 
-## ⏳ Phase 6 — subagents
+## ✅ Phase 6 — subagents
 
 `reviewer`, `researcher` and `test-runner`, each with an output contract
-(maximum length, evidence format, final verdict).
+(maximum length, evidence format, final verdict) enforced by the
+`agent-contract` hook, plus the `orchestrate` skill ([docs/agents.md](agents.md)).

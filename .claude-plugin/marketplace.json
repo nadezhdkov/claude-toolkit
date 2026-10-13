@@ -8,7 +8,7 @@
     {
       "name": "ctk",
       "source": "./plugin",
-      "description": "Quality hooks and process skills backed by the ctk command"
+      "description": "Quality hooks, process skills and subagents backed by the ctk command"
     }
   ]
 }

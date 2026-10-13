@@ -326,6 +326,15 @@ def _package_dir(project: Path, name: str) -> Path | None:
     return None
 
 
+def _read_json(path: Path) -> dict | None:
+    """A package.json, or None when it is unreadable (a broken install must not crash the report)."""
+    try:
+        data = json.loads(path.read_text(errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def _types_entry(package: Path, data: dict) -> Path | None:
     candidates = [data.get("types"), data.get("typings")]
     exports = data.get("exports")
@@ -347,7 +356,9 @@ def find_node(project: Path, name: str) -> Library:
     package = _package_dir(project, name)
     if not package:
         raise NotFound(name)
-    data = json.loads((package / "package.json").read_text())
+    data = _read_json(package / "package.json")
+    unreadable = data is None
+    data = data or {}
     library = Library(
         name=name,
         ecosystem="node",
@@ -358,11 +369,13 @@ def find_node(project: Path, name: str) -> Library:
         readme=_readme_in(package),
         entry=_types_entry(package, data),
     )
+    if unreadable:
+        library.notes.append(f"{shorten_home(package / 'package.json')} is unreadable or not valid JSON")
     if library.entry is None:
         types_name = "@types/" + name.lstrip("@").replace("/", "__")
         types_dir = _package_dir(project, types_name)
         if types_dir:
-            types_data = json.loads((types_dir / "package.json").read_text())
+            types_data = _read_json(types_dir / "package.json") or {}
             library.entry = _types_entry(types_dir, types_data)
             library.notes.append(f"types from {types_name} {types_data.get('version', '?')}")
         else:
