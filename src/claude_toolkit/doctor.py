@@ -350,7 +350,7 @@ TOOLKIT_DEPENDENCIES = (
         _pm("xorg-server-xvfb", "xvfb", "xorg-x11-server-Xvfb", "--cask xquartz"),
         shipped=False,
     ),
-    Dependency("gitleaks", "secret scanning before commits (upcoming hook)", False, _pm("gitleaks"), shipped=False),
+    Dependency("gitleaks", "secret scanning before commits (`secrets` hook)", False, _pm("gitleaks")),
 )
 
 

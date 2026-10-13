@@ -1,5 +1,6 @@
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -53,6 +54,7 @@ def test_install_hint_prefers_the_host_package_manager(monkeypatch):
 def home(tmp_path, monkeypatch):
     monkeypatch.setattr(setup, "claude_home", lambda: tmp_path)
     monkeypatch.setattr(setup, "TOOLKIT_DEPENDENCIES", ())
+    monkeypatch.setattr(setup, "claude_cli", lambda: None)
     return tmp_path
 
 
@@ -92,3 +94,27 @@ def test_bare_ctk_prints_an_overview(capsys):
     out = capsys.readouterr().out
     assert out.startswith("claude-toolkit ") and "\x1b" not in out
     assert all(name in out for name in ("doctor", "runq", "lsp", "sessions", "setup"))
+
+
+def test_setup_installs_the_plugin_once_and_uninstall_removes_it(home, monkeypatch):
+    calls = []
+    monkeypatch.setattr(setup, "claude_cli", lambda: "/usr/bin/claude")
+    monkeypatch.setattr(setup, "_claude", lambda *args: calls.append(args) or "ok")
+    steps = setup.plugin_steps()
+    assert len(steps) == 1 and "install the ctk plugin" in steps[0].description
+    steps[0].apply()
+    assert calls == [("plugin", "marketplace", "add", setup.marketplace_source()), ("plugin", "install", "ctk@ctk")]
+
+    (home / "plugins").mkdir()
+    (home / "plugins" / "installed_plugins.json").write_text(json.dumps({"plugins": {"ctk@ctk": []}}))
+    (home / "plugins" / "known_marketplaces.json").write_text(json.dumps({"ctk": {}}))
+    assert setup.plugin_steps() == []
+    calls.clear()
+    for step in setup.plugin_steps(uninstall=True):
+        step.apply()
+    assert calls == [("plugin", "uninstall", "ctk@ctk"), ("plugin", "marketplace", "remove", "ctk")]
+
+
+def test_marketplace_source_is_this_checkout():
+    source = Path(setup.marketplace_source())
+    assert (source / ".claude-plugin" / "marketplace.json").is_file()

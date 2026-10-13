@@ -53,18 +53,23 @@ claude-toolkit/
 │   ├── runq.py           # output capture and failure extraction
 │   ├── lsp.py            # language detection and LSP plugin status
 │   ├── sessions.py       # transcript metrics
-│   ├── setup.py          # Claude Code integration (CLAUDE.md section)
+│   ├── setup.py          # Claude Code integration (CLAUDE.md section, plugin)
+│   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers
+├── plugin/               # the `ctk` Claude Code plugin (hooks.json calls `ctk hook`)
+├── .claude-plugin/       # marketplace.json: the repository is a plugin marketplace
 ├── tests/                # pytest
 ├── docs/                 # documentation and assets
 └── install.sh            # bootstrap installer (POSIX sh)
 ```
 
-Upcoming hooks, skills and subagents will ship as a **Claude Code plugin** in
-this repository (the repository doubles as a plugin marketplace), so they
+Hooks (and, later, skills and subagents) ship as the **`ctk` Claude Code
+plugin** in `plugin/`; the repository doubles as a plugin marketplace, so they
 install and update through `claude plugin` and their context cost is visible
-with `claude plugin details`. Hooks call `ctk` for their logic.
+with `claude plugin details`. Hooks call `ctk hook <name>` for their logic and
+end in `exit 0`, so an outdated or missing `ctk` can never block a tool call.
+(Plugin names starting with `claude-` are reserved, hence `ctk`.)
 
 ### Hook scope
 

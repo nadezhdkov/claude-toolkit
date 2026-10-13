@@ -78,6 +78,7 @@ Run `ctk` on its own for an overview:
 | [`ctk lsp`](docs/commands/lsp.md) | Language servers and Claude Code LSP plugins a project needs |
 | [`ctk sessions`](docs/commands/sessions.md) | Counts-only metrics from Claude Code transcripts |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
+| [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 
 ### `ctk doctor` — environment check
 
@@ -118,13 +119,36 @@ comparisons. Message text is never copied.
 
 <img src="docs/assets/screenshots/sessions.svg" alt="ctk sessions output: activity, context usage and a bar chart of the most used tools">
 
+## Hooks plugin
+
+The `ctk` Claude Code plugin adds hooks that run outside the conversation and
+cost no context. They stay silent when all is well and skip projects they do
+not apply to:
+
+| Hook | What it does |
+|---|---|
+| `format-file` | formats the file Claude just edited with the project's own formatter (ruff, black, prettier, biome, rustfmt, gofmt, stylua, clang-format) |
+| `affected-tests` | at the end of a turn, runs the tests related to the edited files; on failure Claude keeps working with the digest |
+| `guard-destructive` | flags `rm -rf` outside the project, force-push to `main` and `git reset --hard` over uncommitted work (warn-only until you switch it to block) |
+| `secrets` | runs `gitleaks` before `git commit` and denies commits with secrets |
+| `notify` | desktop notification when Claude Code waits for you or a long turn ends |
+
+`ctk setup` installs it, asking first; by hand:
+
+```bash
+claude plugin marketplace add nadezhdkov/claude-toolkit
+claude plugin install ctk@ctk
+```
+
+Per-project settings and opt-out live in `.claude-toolkit.toml`; see
+[docs/commands/hooks.md](docs/commands/hooks.md).
+
 ## Roadmap
 
-`0.1.0` ships the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
-installer. Next come quality hooks (formatting, affected tests, a
-destructive-command guard that starts in warn-only mode, secret scanning),
+`0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
+installer; the quality hooks plugin follows. Next come
 visual and audio verification (`shoot`, `audiocheck`), process skills, a
-sandbox for untrusted code and subagents with output contracts, delivered as a
+sandbox for untrusted code and subagents with output contracts, delivered as the
 Claude Code plugin. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Development

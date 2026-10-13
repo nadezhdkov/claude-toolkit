@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -244,35 +245,70 @@ def _summarise_styled(
     return "\n".join(out)
 
 
-def run(command: list[str], *, keep_logs: int = 50) -> int:
-    if not command:
-        print("usage: ctk runq -- <command> [args...]", file=sys.stderr)
-        return 2
+@dataclass
+class Execution:
+    exit_code: int
+    output: str
+    log_path: Path
+    elapsed: float
+    timed_out: bool = False
+
+
+def execute(
+    command: list[str], *, cwd: Path | None = None, timeout: float | None = None, keep_logs: int = 50
+) -> Execution:
+    """Run ``command``, writing its full output to a new log. Raises FileNotFoundError."""
     directory = log_dir()
     directory.mkdir(parents=True, exist_ok=True)
     name = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(command[0]).name)[:40]
     log_path = directory / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}.log"
     started = time.monotonic()
-    try:
-        with log_path.open("w", encoding="utf-8", errors="replace") as log, Spinner(f"running {' '.join(command)}"):
-            log.write(f"$ {' '.join(command)}\n")
-            process = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace"
-            )
-            chunks: list[str] = []
-            assert process.stdout is not None
+    timed_out = False
+    with log_path.open("w", encoding="utf-8", errors="replace") as log:
+        log.write(f"$ {' '.join(command)}\n")
+        process = subprocess.Popen(
+            command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace"
+        )
+        timer = None
+        if timeout is not None:
+
+            def kill() -> None:
+                nonlocal timed_out
+                timed_out = True
+                process.kill()
+
+            timer = threading.Timer(timeout, kill)
+            timer.start()
+        chunks: list[str] = []
+        assert process.stdout is not None
+        try:
             for line in process.stdout:
                 log.write(line)
                 chunks.append(line)
             exit_code = process.wait()
+        finally:
+            if timer is not None:
+                timer.cancel()
+            if process.poll() is None:
+                process.kill()
+    _prune(directory, keep_logs)
+    return Execution(exit_code, "".join(chunks), log_path, time.monotonic() - started, timed_out)
+
+
+def run(command: list[str], *, keep_logs: int = 50) -> int:
+    if not command:
+        print("usage: ctk runq -- <command> [args...]", file=sys.stderr)
+        return 2
+    try:
+        with Spinner(f"running {' '.join(command)}"):
+            done = execute(command, keep_logs=keep_logs)
     except FileNotFoundError:
         print(f"runq: command not found: {command[0]}", file=sys.stderr)
         return 127
     except KeyboardInterrupt:
         return 130
-    print(summarise(command, "".join(chunks), exit_code, log_path, elapsed=time.monotonic() - started))
-    _prune(directory, keep_logs)
-    return exit_code
+    print(summarise(command, done.output, done.exit_code, done.log_path, elapsed=done.elapsed))
+    return done.exit_code
 
 
 def _prune(directory: Path, keep: int) -> None:

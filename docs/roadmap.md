@@ -16,14 +16,17 @@ test, PR title, changelog, label-driven auto-merge).
 - `ctk runq`: failures and summary instead of full output.
 - `ctk lsp`: language servers and official LSP plugins.
 
-## ⏳ Phase 2 — automatic quality (Claude Code plugin)
+## 🚧 Phase 2 — automatic quality (Claude Code plugin)
+
+Implemented as the `ctk` plugin ([docs/commands/hooks.md](commands/hooks.md)); the phase
+closes after the warn-only week and a `ctk sessions` before/after measurement.
 
 | Hook | Event | Behaviour |
 |---|---|---|
 | `format-file` | after Edit/Write | format only the edited file with the project's formatter; silent on success |
 | `affected-tests` | end of turn | run affected tests through `ctk runq`; speak only on failure |
 | `guard-destructive` | before Bash | flag `rm -rf` outside the project, force-push to `main`, `git reset --hard` with uncommitted work. **Starts in warn-only mode** and switches to blocking after a week without false positives |
-| `secrets` | git `pre-commit` | `gitleaks protect --staged` |
+| `secrets` | before `git commit` (and as a git `pre-commit` hook) | `gitleaks` on the staged changes |
 | `notify` | waiting for input / long task done | desktop notification, at most one per minute |
 
 Measured with `ctk sessions`: "file changed on disk" notices must not rise.

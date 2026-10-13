@@ -36,6 +36,7 @@ confirm it:
 | Step | Change | Undo |
 |---|---|---|
 | Claude Code instructions | Adds (or refreshes) a short section between `<!-- claude-toolkit:start -->` and `<!-- claude-toolkit:end -->` at the end of `~/.claude/CLAUDE.md`, so Claude Code knows when to use each `ctk` command. The previous file is backed up to `~/.claude/backups/claude-toolkit/`. | `ctk setup --uninstall` |
+| Hooks plugin | Registers this repository as the `ctk` plugin marketplace and installs the `ctk` plugin (`claude plugin marketplace add`, `claude plugin install ctk@ctk`). See [hooks](commands/hooks.md). | `ctk setup --uninstall` |
 | Optional dependencies | Offers to install missing tools listed by `ctk doctor --toolkit` (for example `gitleaks`, `Xvfb`) with your distribution's package manager. | your package manager |
 
 Running `ctk setup` again is safe: it only proposes what is missing or outdated.
@@ -53,11 +54,11 @@ The editable install means `git pull` updates `ctk` immediately.
 ## Uninstalling
 
 ```bash
-ctk setup --uninstall      # removes the CLAUDE.md section (with a backup)
+ctk setup --uninstall      # removes the CLAUDE.md section (with a backup) and the plugin
 uv tool uninstall claude-toolkit
 ```
 
-Logs written by `ctk runq` live in `~/.cache/claude-toolkit/` and can be deleted.
+Logs written by `ctk runq` and the hooks live in `~/.cache/claude-toolkit/` and can be deleted.
 
 ## Supported systems
 
