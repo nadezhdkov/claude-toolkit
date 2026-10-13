@@ -77,3 +77,44 @@ def test_weekly_csv(tmp_path):
     rows = sessions.weekly_csv([session]).strip().splitlines()
     assert rows[0].startswith("week,sessions,tool_calls")
     assert rows[1].startswith("2026-W") and len(rows) >= 2
+
+
+def model_call(message_id, fresh, written, read, out, *blocks):
+    usage = {"input_tokens": fresh, "cache_creation_input_tokens": written, "cache_read_input_tokens": read,
+             "output_tokens": out}  # fmt: skip
+    return {"type": "assistant", "timestamp": "2026-10-05T10:00:00Z",
+            "message": {"id": message_id, "content": list(blocks), "usage": usage}}  # fmt: skip
+
+
+def test_tokens_peak_context_compactions_and_carried_results(tmp_path):
+    read = {"type": "tool_use", "id": "r1", "name": "Read", "input": {"file_path": "/secret/plan.md"}}
+    reread = {"type": "tool_use", "id": "r2", "name": "Read", "input": {"file_path": "/secret/plan.md"}}
+    records = [
+        model_call("m1", 5, 1000, 0, 10, read),
+        model_call("m1", 5, 1000, 0, 10),  # the same call split over two records: counted once
+        tool_result_for("r1", "a" * 400),
+        model_call("m2", 1, 50, 1000, 20, reread),
+        tool_result_for("r2", "b" * 100),
+        model_call("m3", 1, 10, 1050, 30),
+        {"type": "system", "subtype": "compact_boundary", "timestamp": "2026-10-05T10:01:00Z"},
+        model_call("m4", 2, 300, 0, 5),
+    ]
+    path = tmp_path / "-work-demo" / "s2.jsonl"
+    write_session(path, records)
+    session = sessions.parse_session(path)
+    assert session.model_calls == 4
+    assert session.tokens["cache_read_input_tokens"] == 2050 and session.tokens["output_tokens"] == 65
+    assert session.peak_context == 1061  # m3: 1 + 10 + 1050
+    assert session.compactions == 1 and session.repeated_reads == 1
+    # r1 (400 chars) is read again by m2 and m3; r2 (100) by m3; both are gone after the compaction.
+    assert session.carried_chars_by_tool == {"Read": 400 * 2 + 100 * 1}
+    summary = sessions.summarise([session])
+    assert summary.context_tokens == 9 + 1360 + 2050 and summary.cache_hit_rate == round(2050 / 3419, 4)
+    rendered = sessions.render(summary, "test")
+    assert "plan.md" not in rendered and "/secret" not in rendered
+    assert "repeated reads of a file" in rendered and "compactions" in rendered
+
+
+def tool_result_for(tool_id, text):
+    return {"type": "user", "timestamp": "2026-10-05T10:00:00Z",
+            "message": {"content": [{"type": "tool_result", "tool_use_id": tool_id, "content": text}]}}  # fmt: skip

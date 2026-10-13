@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk sessions` reports real token usage from the transcripts' usage
+  records (fresh input, cache writes, cache reads, output, cache hit rate),
+  tokens per session and the peak context window, compactions, repeated reads
+  of the same file (counted through a hash, never the name), and "results
+  re-read later": each tool output's size times the model calls that read it
+  again, by tool. The weekly CSV gains the matching columns.
 - `benchmark/`: fixed tasks run with and without the plugin, each in a clean
   Docker container (Claude Code at the host's version, this branch's ctk,
   nothing from the user's configuration), reporting score, context tokens,

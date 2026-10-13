@@ -23,7 +23,21 @@ ctk sessions --json              # the full summary as JSON
 | Bash output | average and maximum characters returned by shell commands (≈ ÷4 tokens) | `runq` |
 | all tool results | total characters returned by tools | `runq` |
 | "file changed on disk" notices | notices Claude receives when a file changes after it was edited, per session | must not rise after formatting hooks |
+| tokens read (context) | everything the model read, from the transcripts' usage records: fresh input, cache writes and cache reads, with the share served from cache | `runq`, `map`, subagents |
+| tokens written | output tokens and the number of model calls | — |
+| context per session | average tokens read per session, and the median and largest **peak window** (the most one call read: how full the context got) | `runq`, `map`, `handoff` |
+| compactions | conversation compactions, and how many sessions had one | `map`, subagents |
+| results re-read later | each tool result's size × the model calls that read it again before the end or the next compaction, by tool: what an output really cost | `runq`, `libdocs`, `map` |
+| repeated reads of a file | `Read` calls on a file already read in the same session (counted through a hash; names are never kept) | `map`, `handoff` |
 | skills, subagents, MCP servers, ctk commands | usage counts | used for the monthly review |
+
+### Why "re-read later" matters
+
+Every model call reads the whole context again (mostly from the prompt
+cache). A 10,000-token command output early in a 300-call session is read
+about 3 million times over, so the total of tool outputs understates their
+cost by orders of magnitude; "results re-read later" counts it the way the
+model pays for it.
 
 ## Privacy
 
