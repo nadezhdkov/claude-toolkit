@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk libdocs`: the installed version of a dependency next to its declared
+  constraint, its source path, README sections and public API, for Python,
+  Node (with `@types` fallback), Rust and Go; `--find SYMBOL` prints where a
+  symbol is defined with its signature and docs; `--readme`, `--api`, `--json`.
+  Packages are parsed, never imported or executed.
+
 - `ctk sandbox`: runs a command in a bubblewrap sandbox with no network, the
   system read-only, an empty home (toolchains read-only, credentials never
   mounted), a cleared environment, the target directory read-write (or
