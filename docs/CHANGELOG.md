@@ -8,6 +8,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk diffcheck`: deterministic checks of the current change against a base
+  (default: the merge-base with the default branch, uncommitted and untracked
+  files included): public symbols removed or with changed signatures and where
+  removed ones are still used (high, exit 1), lockfiles, manifests, CI,
+  container, environment, generated, large and binary files, debug leftovers
+  and TODO comments in added lines, and source changed without tests. The
+  `reviewer` agent and the `ship` and `security-pass` skills start from it.
 - `ctk verify`: an evidence ledger. Every `ctk runq` run (and every
   `affected-tests` run) inside a git repository is recorded with its exit code,
   counts, log and a hash of the exact code state (HEAD, uncommitted changes,

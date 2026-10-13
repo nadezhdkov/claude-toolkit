@@ -109,6 +109,12 @@ def _verify(args: argparse.Namespace) -> int:
     return verify.run(args)
 
 
+def _diffcheck(args: argparse.Namespace) -> int:
+    from . import diffcheck
+
+    return diffcheck.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -135,6 +141,7 @@ OVERVIEW = (
     ("libdocs", "installed version, README and API of a dependency, from its own files"),
     ("map", "compact map of a repository's files and symbols; where a symbol is used"),
     ("verify", "what is verified for the current code: fresh, failing, stale or never run"),
+    ("diffcheck", "deterministic checks of a change: removed API, risky files, debug leftovers, tests"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -306,6 +313,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--path", default=".", help="directory inside the repository (default .)")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_verify)
+
+    p = sub.add_parser("diffcheck", help="deterministic checks of the current change against a base")
+    p.add_argument("--base", help="commit to compare with (default: merge-base with the default branch)")
+    p.add_argument("--path", default=".", help="directory inside the repository (default .)")
+    p.add_argument("--strict", action="store_true", help="exit 1 on any finding, not only high ones")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_diffcheck)
 
     from .hooks import HOOKS
 

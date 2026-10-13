@@ -62,6 +62,7 @@ claude-toolkit/
 │   ├── libdocs.py        # installed dependency: version, README, API
 │   ├── map.py            # repository map and symbol uses
 │   ├── verify.py         # evidence ledger: checks per code state
+│   ├── diffcheck.py      # deterministic checks of a change
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers

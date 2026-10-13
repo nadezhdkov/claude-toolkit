@@ -16,6 +16,11 @@ Review exactly the change you were given (default: `git diff <base>...HEAD`
 plus uncommitted changes). Read the surrounding code that the change calls or
 is called by, but do not review unrelated code.
 
+Start with `ctk diffcheck` (same base): it already lists removed or changed
+public API and where it is still used, lockfile/CI/config/generated files,
+debug leftovers and code changed without tests. Confirm what matters there
+and spend your reading on what needs judgement.
+
 ## What to look for, in order
 
 1. **Correctness:** wrong logic, off-by-one, inverted conditions, unhandled
