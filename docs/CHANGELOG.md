@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `benchmark/`: fixed tasks run with and without the plugin, each in a clean
+  Docker container (Claude Code at the host's version, this branch's ctk,
+  nothing from the user's configuration), reporting score, context tokens,
+  turns and cost per arm. First cases: long test output, an installed API that
+  differs from legacy code, and a commit with a staged secret.
+- `plugin/bin/ctk`: the plugin ships a launcher, so its skills and agents find
+  `ctk` even where `~/.local/bin` is not reachable; an installed `ctk` still
+  comes first on `PATH`.
 - Subagents in the `ctk` plugin: `test-runner` (haiku), `reviewer` and
   `researcher`, read-only and unable to start other agents, each declaring an
   output contract (maximum lines, allowed verdicts, evidence) in its frontmatter.

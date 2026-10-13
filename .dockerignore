@@ -1,0 +1,5 @@
+# Only src/ and plugin/ go into the benchmark image.
+*
+!src/
+!plugin/
+**/__pycache__
