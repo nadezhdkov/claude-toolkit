@@ -1,0 +1,46 @@
+name: Auto-merge
+
+# pull_request_target is required so fork PRs can be auto-merged; it is safe
+# here because no job checks out, builds or runs code from the pull request.
+on: # zizmor: ignore[dangerous-triggers]
+  pull_request_target:
+    types: [labeled, synchronize]
+
+permissions: {}
+
+jobs:
+  enable:
+    name: Enable auto-merge
+    if: github.event.action == 'labeled' && github.event.label.name == 'automerge'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Squash-merge once all required checks pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+  revoke:
+    name: Revoke auto-merge on new outside commits
+    if: >-
+      github.event.action == 'synchronize' &&
+      contains(github.event.pull_request.labels.*.name, 'automerge') &&
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Require a maintainer to review the new commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ -n "$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
+            gh pr merge --disable-auto "$PR_URL"
+          fi
+          gh pr edit --remove-label automerge "$PR_URL"
+          gh pr comment "$PR_URL" --body "New commits were pushed after the \`automerge\` label was added, so auto-merge was turned off. A maintainer can review the changes and add the label again."

@@ -1,0 +1,42 @@
+[project]
+name = "claude-toolkit"
+version = "0.1.0"
+description = "General-purpose tools, hooks, skills and subagents that make Claude Code more effective in any project"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "nadezhdkov" }]
+keywords = ["claude-code", "developer-tools", "cli", "lsp", "testing"]
+# Runtime is stdlib-only on purpose: fast start-up and nothing to break.
+dependencies = []
+
+[project.scripts]
+ctk = "claude_toolkit.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/nadezhdkov/claude-toolkit"
+Changelog = "https://github.com/nadezhdkov/claude-toolkit/blob/main/docs/CHANGELOG.md"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/claude_toolkit"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# The CLAUDE.md section is Markdown prose; its lines are not code.
+"src/claude_toolkit/setup.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

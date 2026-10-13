@@ -1,0 +1,21 @@
+name: Tool idea
+description: Propose a tool, hook, skill or subagent.
+labels: [idea]
+body:
+  - type: textarea
+    id: pain
+    attributes:
+      label: What real problem does it solve?
+      description: "Following the project's first principle: \"I lost X / got Y wrong because this was missing\"."
+    validations:
+      required: true
+  - type: dropdown
+    id: shape
+    attributes:
+      label: Proposed shape
+      options: [ctk command, hook, skill, subagent, other]
+  - type: textarea
+    id: done
+    attributes:
+      label: How would we know it works?
+      description: A testable done criterion.

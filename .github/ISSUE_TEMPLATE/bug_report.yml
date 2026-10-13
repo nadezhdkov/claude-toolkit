@@ -1,0 +1,23 @@
+name: Bug report
+description: A ctk command gave wrong output, failed or crashed.
+labels: [bug]
+body:
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran, e.g. `ctk doctor ~/project`.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Output (trim secrets) and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: Output of `ctk --version`, OS / distribution, Python version.
