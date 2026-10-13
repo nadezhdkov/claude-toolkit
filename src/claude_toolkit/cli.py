@@ -91,6 +91,12 @@ def _sandbox(args: argparse.Namespace) -> int:
     return sandbox.run(args)
 
 
+def _libdocs(args: argparse.Namespace) -> int:
+    from . import libdocs
+
+    return libdocs.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -114,6 +120,7 @@ OVERVIEW = (
     ("shoot", "deterministic screenshots (web, Godot, desktop), baselines, contact sheets"),
     ("audiocheck", "loudness, clipping, silence and loop seams of audio files, plus images"),
     ("sandbox", "run untrusted code without network, with a read-only system and limits"),
+    ("libdocs", "installed version, README and API of a dependency, from its own files"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -261,6 +268,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="print the sandbox and the bwrap command only")
     p.add_argument("command", nargs=argparse.REMAINDER, help="-- <command> [args...]")
     p.set_defaults(func=_sandbox)
+
+    p = sub.add_parser("libdocs", help="installed version, README and API of a dependency")
+    p.add_argument("package", help="package name (PyPI/import name, npm name, crate or Go module path)")
+    p.add_argument("path", nargs="?", default=".", help="project directory (default .)")
+    p.add_argument("--ecosystem", choices=("python", "node", "rust", "go"), help="only look in one ecosystem")
+    view = p.add_mutually_exclusive_group()
+    view.add_argument("--readme", action="store_true", help="print the README")
+    view.add_argument("--api", action="store_true", help="print the whole public API (not just the first lines)")
+    view.add_argument("--find", metavar="SYMBOL", help="where SYMBOL (e.g. Session.get) is defined, with its docs")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_libdocs)
 
     from .hooks import HOOKS
 
