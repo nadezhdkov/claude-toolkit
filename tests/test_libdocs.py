@@ -202,3 +202,10 @@ def test_never_imports_the_package(python_project, capsys):
     trap.write_text(trap.read_text() + "raise SystemExit('executed!')\n")
     assert cli.main(["libdocs", "requests", str(python_project)]) == 0
     assert "executed!" not in capsys.readouterr().out
+
+
+def test_broken_package_json_is_reported_not_a_crash(tmp_path, capsys):
+    project = tmp_path / "web"
+    write(project / "node_modules" / "broken" / "package.json", "{ not json")
+    assert cli.main(["libdocs", "broken", str(project), "--ecosystem", "node"]) == 0
+    assert "unreadable or not valid JSON" in capsys.readouterr().out

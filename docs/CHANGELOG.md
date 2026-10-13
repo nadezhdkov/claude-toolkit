@@ -17,7 +17,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `orchestrate` skill: when to delegate, self-contained briefs, parallel
   fan-out and the implement → test → review loop.
 
-### Added
 
 - `ctk libdocs`: the installed version of a dependency next to its declared
   constraint, its source path, README sections and public API, for Python,
@@ -34,12 +33,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `.claude-toolkit.toml`; `--dry-run` shows the mounts and the command.
 - `ctk doctor --toolkit` checks for bubblewrap.
 
-### Changed
-
-- CI installs bubblewrap and allows unprivileged user namespaces in the
-  integration job, so the sandbox tests run there.
-
-### Added
 
 - Process skills in the `ctk` plugin: `debug`, `ship`, `handoff`,
   `onboard-repo`, `visual-qa` and `security-pass` (`/ctk:<name>`), which use
@@ -60,7 +53,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `--images` (waveform and spectrogram PNGs).
 - `ctk doctor --toolkit` checks for Xvfb and ffmpeg.
 
-### Added
 
 - The `ctk` Claude Code plugin (`plugin/`, with the repository as its
   marketplace) and `ctk hook <name>`, the logic behind its hooks:
@@ -79,8 +71,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- CI installs bubblewrap and allows unprivileged user namespaces in the
+  integration job, so the sandbox tests run there.
+
+
 - `ctk` loads command modules lazily, roughly halving start-up time (hooks run
   on every tool call).
+
+### Fixed
+
+- `ctk runq` gave commands started in the same second the same log file, so
+  the later one overwrote the earlier log; logs now get a `-2`, `-3`… suffix.
+- `ctk libdocs` crashed on an unreadable `package.json` inside `node_modules`.
 
 ## [0.2.0] - 2026-10-13
 

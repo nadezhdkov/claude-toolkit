@@ -261,10 +261,10 @@ def execute(
     directory = log_dir()
     directory.mkdir(parents=True, exist_ok=True)
     name = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(command[0]).name)[:40]
-    log_path = directory / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}.log"
+    log_path, log = _new_log(directory, f"{time.strftime('%Y%m%d-%H%M%S')}-{name}")
     started = time.monotonic()
     timed_out = False
-    with log_path.open("w", encoding="utf-8", errors="replace") as log:
+    with log:
         log.write(f"$ {' '.join(command)}\n")
         process = subprocess.Popen(
             command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace"
@@ -293,6 +293,17 @@ def execute(
                 process.kill()
     _prune(directory, keep_logs)
     return Execution(exit_code, "".join(chunks), log_path, time.monotonic() - started, timed_out)
+
+
+def _new_log(directory: Path, stem: str):
+    """Create a log that no other run uses: commands started in the same second get -2, -3…"""
+    for index in range(1, 1000):
+        path = directory / (f"{stem}.log" if index == 1 else f"{stem}-{index}.log")
+        try:
+            return path, path.open("x", encoding="utf-8", errors="replace")
+        except FileExistsError:
+            continue
+    raise FileExistsError(f"too many logs named {stem} in {directory}")
 
 
 def run(command: list[str], *, keep_logs: int = 50) -> int:

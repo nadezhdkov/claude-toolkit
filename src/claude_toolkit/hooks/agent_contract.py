@@ -22,7 +22,8 @@ from pathlib import Path
 from .base import Event, Outcome
 
 VERDICT = re.compile(r"^VERDICT:\s*([a-z-]+)\s*$")
-EVIDENCE = re.compile(r"(?:[\w./~-]+\.[A-Za-z0-9]+:\d+)|(?:https?://\S+)|(?:\b[\w/.-]+::\w+)")
+# path:line, a URL, or a test id such as tests/test_api.py::test_login (a file with an extension, not std::io).
+EVIDENCE = re.compile(r"(?:[\w./~-]+\.[A-Za-z0-9]+:\d+)|(?:https?://\S+)|(?:[\w./-]+\.[A-Za-z0-9]+::\w+)")
 
 
 @dataclass(frozen=True)
@@ -65,8 +66,8 @@ def agents_dirs() -> list[Path]:
 
 def contract_for(agent_type: str) -> Contract | None:
     plugin, _, name = agent_type.rpartition(":")
-    if plugin not in ("ctk", "") or not name:
-        return None
+    if plugin != "ctk" or not name:
+        return None  # another plugin's agent, a user's own agent of the same name, or a built-in
     for directory in agents_dirs():
         path = directory / f"{name}.md"
         if path.is_file():
@@ -98,7 +99,9 @@ def handle(event: Event) -> Outcome:
     contract = contract_for(agent_type)
     if contract is None:
         return Outcome()
-    message = str(event.data.get("last_assistant_message") or "")
+    message = event.data.get("last_assistant_message")
+    if not isinstance(message, str) or not message.strip():
+        return Outcome()  # nothing to judge: fail open rather than send every agent back
     problems = violations(message, contract)
     if not problems:
         return Outcome()

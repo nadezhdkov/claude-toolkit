@@ -101,3 +101,19 @@ def test_contract_found_without_the_plugin_root(monkeypatch):
     monkeypatch.delenv("CTK_PLUGIN_ROOT")
     monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
     assert agent_contract.contract_for("ctk:reviewer") == REVIEW
+
+
+def test_missing_report_fails_open():
+    event = json.loads(stop("ctk:reviewer", ""))
+    del event["last_assistant_message"]
+    assert hooks.dispatch("agent-contract", json.dumps(event)).stdout == ""
+
+
+def test_a_users_own_agent_with_the_same_name_is_not_judged():
+    assert agent_contract.contract_for("reviewer") is None
+    assert hooks.dispatch("agent-contract", stop("reviewer", "no verdict here")).stdout == ""
+
+
+def test_rust_paths_are_not_evidence():
+    problems = agent_contract.violations("uses std::io wrongly\nVERDICT: changes-requested", REVIEW)
+    assert any("needs evidence" in problem for problem in problems)
