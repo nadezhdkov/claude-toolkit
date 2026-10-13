@@ -77,6 +77,7 @@ Run `ctk` on its own for an overview:
 | [`ctk runq`](docs/commands/runq.md) | Runs a command; prints failures, summary and the full-log path |
 | [`ctk lsp`](docs/commands/lsp.md) | Language servers and Claude Code LSP plugins a project needs |
 | [`ctk sessions`](docs/commands/sessions.md) | Counts-only metrics from Claude Code transcripts |
+| [`ctk shoot`](docs/commands/shoot.md) | Deterministic screenshots of web pages, Godot scenes and desktop apps; baselines and contact sheets |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 
@@ -119,6 +120,21 @@ comparisons. Message text is never copied.
 
 <img src="docs/assets/screenshots/sessions.svg" alt="ctk sessions output: activity, context usage and a bar chart of the most used tools">
 
+### `ctk shoot`: see what changed
+
+Deterministic screenshots, so Claude can look at the UI it just changed:
+web pages through Playwright's Chromium (frozen animations, fixed viewport,
+time zone and locale), Godot 4 scenes through the movie writer, and any desktop
+program on a private Xvfb display. `--baseline` compares with a reference
+image, with a threshold, a tolerance and masks, and writes a diff image with
+the bounding box of the change. `ctk shoot sheet` combines several captures
+into one numbered contact sheet.
+
+```bash
+ctk shoot web localhost:5173 --baseline shots/home.png
+ctk shoot godot . --scene res://ui/menu.tscn
+```
+
 ## Hooks plugin
 
 The `ctk` Claude Code plugin adds hooks that run outside the conversation and
@@ -146,8 +162,8 @@ Per-project settings and opt-out live in `.claude-toolkit.toml`; see
 ## Roadmap
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
-installer; the quality hooks plugin follows. Next come
-visual and audio verification (`shoot`, `audiocheck`), process skills, a
+installer; then came the quality hooks plugin and `ctk shoot`. Next come audio
+verification (`audiocheck`), process skills, a
 sandbox for untrusted code and subagents with output contracts, delivered as the
 Claude Code plugin. See [docs/roadmap.md](docs/roadmap.md).
 

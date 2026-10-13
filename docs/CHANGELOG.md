@@ -8,6 +8,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk shoot`: deterministic screenshots of web pages (Playwright's Chromium,
+  run through `uv run --with playwright==1.63.0`), Godot 4 scenes (movie
+  writer at a fixed frame rate) and desktop programs (private Xvfb display);
+  `--baseline` comparison with threshold, tolerance, masks, bounding box and
+  diff image; `ctk shoot compare` and `ctk shoot sheet` (numbered contact
+  sheets). Web captures report HTTP, console and page errors.
+- A standard-library PNG reader and writer (`png.py`).
+- `ctk doctor --toolkit` checks for Xvfb.
+
+### Added
+
 - The `ctk` Claude Code plugin (`plugin/`, with the repository as its
   marketplace) and `ctk hook <name>`, the logic behind its hooks:
   `format-file` (format the edited file with the project's formatter),

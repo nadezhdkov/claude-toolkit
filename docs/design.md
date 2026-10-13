@@ -54,6 +54,9 @@ claude-toolkit/
 │   ├── lsp.py            # language detection and LSP plugin status
 │   ├── sessions.py       # transcript metrics
 │   ├── setup.py          # Claude Code integration (CLAUDE.md section, plugin)
+│   ├── shoot.py          # screenshots, baselines, contact sheets
+│   ├── shoot_web.py      # Playwright script run under `uv run --with playwright`
+│   ├── png.py            # stdlib PNG reader/writer
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers
@@ -82,4 +85,6 @@ a `.claude-toolkit.toml` file at its root.
 
 `ctk` uses only the Python standard library (3.11+). External programs
 (`node`, `uv`, `ffmpeg`, language servers…) are detected, never required for
-the command that does not need them.
+the command that does not need them. Python packages a single command needs
+(Playwright for `ctk shoot web`) run in an ephemeral, version-pinned
+environment through `uv run --with`, never imported by `ctk` itself.
