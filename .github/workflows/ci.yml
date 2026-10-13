@@ -50,8 +50,25 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python }}
+      # One job installs the external tools so the integration tests (ffmpeg, Xvfb,
+      # ImageMagick) run instead of being skipped; it fails if any test is skipped.
+      - name: Install integration tools
+        if: matrix.python == '3.12'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ffmpeg xvfb imagemagick
       - name: Unit tests
+        if: matrix.python != '3.12'
         run: uv run pytest -v
+      - name: Unit and integration tests (no skips allowed)
+        if: matrix.python == '3.12'
+        shell: bash
+        run: |
+          uv run pytest -v -rs | tee pytest.log
+          if grep -q ' SKIPPED' pytest.log; then
+            echo "::error::integration tests were skipped; check the tools installed above"
+            exit 1
+          fi
 
   install:
     name: Install
