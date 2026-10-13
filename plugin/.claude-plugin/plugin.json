@@ -1,0 +1,18 @@
+{
+  "name": "ctk",
+  "version": "0.2.0",
+  "description": "Automatic quality for Claude Code: format edited files, run affected tests, guard destructive commands, scan commits for secrets and notify when input is needed. Requires the `ctk` command.",
+  "author": {
+    "name": "nadezhdkov"
+  },
+  "homepage": "https://github.com/nadezhdkov/claude-toolkit",
+  "repository": "https://github.com/nadezhdkov/claude-toolkit",
+  "license": "MIT",
+  "keywords": [
+    "hooks",
+    "formatting",
+    "tests",
+    "safety",
+    "secrets"
+  ]
+}

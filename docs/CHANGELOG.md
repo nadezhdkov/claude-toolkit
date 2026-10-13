@@ -6,6 +6,28 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The `ctk` Claude Code plugin (`plugin/`, with the repository as its
+  marketplace) and `ctk hook <name>`, the logic behind its hooks:
+  `format-file` (format the edited file with the project's formatter),
+  `affected-tests` (run tests related to the turn's edits when Claude stops;
+  block once on failure), `guard-destructive` (warn-only by default: `rm -rf`
+  outside the project, force-push to protected branches, `git reset --hard`
+  over uncommitted work), `secrets` (gitleaks before `git commit`, also usable
+  as a git pre-commit hook with `--git`) and `notify` (desktop notifications,
+  at most one per minute).
+- Per-project hook settings and opt-out in `.claude-toolkit.toml`, user-wide in
+  `~/.config/claude-toolkit/config.toml`.
+- `ctk setup` offers to register the marketplace and install the plugin;
+  `--uninstall` removes them.
+- `ctk doctor --toolkit` checks for gitleaks.
+
+### Changed
+
+- `ctk` loads command modules lazily, roughly halving start-up time (hooks run
+  on every tool call).
+
 ## [0.2.0] - 2026-10-13
 
 ### Added

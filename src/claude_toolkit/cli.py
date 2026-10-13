@@ -8,23 +8,30 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from . import __version__, doctor, lsp, runq, sessions, setup
+from . import __version__
 from .common import EXIT_NEEDS_CONFIRMATION, ConfirmationRequired
-from .style import Spinner, Style
+from .style import Style
 
 
 def _doctor(args: argparse.Namespace) -> int:
+    from . import doctor
+
     report = doctor.check_toolkit() if args.toolkit else doctor.check_project(Path(args.path).resolve())
     print(doctor.to_json(report) if args.json else doctor.render(report, verbose=args.verbose))
     return 1 if report.errors else 0
 
 
 def _runq(args: argparse.Namespace) -> int:
+    from . import runq
+
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     return runq.run(command, keep_logs=args.keep)
 
 
 def _sessions(args: argparse.Namespace) -> int:
+    from . import sessions
+    from .style import Spinner
+
     root = Path(args.root).expanduser() if args.root else sessions.default_root()
     paths = sessions.find_sessions(root, args.since, include_subagents=not args.no_subagents)
     with Spinner(f"reading {len(paths)} transcripts"):
@@ -48,6 +55,8 @@ def _sessions(args: argparse.Namespace) -> int:
 
 
 def _lsp(args: argparse.Namespace) -> int:
+    from . import lsp
+
     root = Path(args.path).resolve()
     host = lsp.default_host()
     statuses = lsp.status(root)
@@ -59,7 +68,24 @@ def _lsp(args: argparse.Namespace) -> int:
 
 
 def _setup(args: argparse.Namespace) -> int:
+    from . import setup
+
     return setup.run(assume_yes=args.yes, dry_run=args.dry_run, uninstall=args.uninstall)
+
+
+def _hook(args: argparse.Namespace) -> int:
+    if args.git:
+        from .hooks.secrets import git_pre_commit
+
+        return git_pre_commit()
+    if args.log:
+        from .hooks.guard import show_log
+
+        print(show_log())
+        return 0
+    from . import hooks
+
+    return hooks.run(args.hook)
 
 
 OVERVIEW = (
@@ -68,6 +94,7 @@ OVERVIEW = (
     ("lsp", "language servers and Claude Code LSP plugins a project needs"),
     ("sessions", "counts-only metrics from Claude Code transcripts"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
+    ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
 EXAMPLES = ("ctk doctor ~/project", "ctk runq -- pytest", "ctk lsp --install", "ctk sessions --since 30")
 DOCS = "https://github.com/nadezhdkov/claude-toolkit"
@@ -136,6 +163,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="only print the plan")
     p.add_argument("--uninstall", action="store_true", help="remove what setup added")
     p.set_defaults(func=_setup)
+
+    from .hooks import HOOKS
+
+    p = sub.add_parser("hook", help="run a plugin hook on the event JSON read from stdin")
+    p.add_argument("hook", choices=HOOKS)
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--git", action="store_true", help="secrets: act as a git pre-commit hook (exit 1 on findings)")
+    mode.add_argument("--log", action="store_true", help="guard-destructive: show recorded matches")
+    p.set_defaults(func=_hook)
     return parser
 
 

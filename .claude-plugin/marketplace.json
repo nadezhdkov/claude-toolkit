@@ -1,0 +1,14 @@
+{
+  "name": "ctk",
+  "description": "claude-toolkit: tools, hooks, skills and subagents that make Claude Code more effective",
+  "owner": {
+    "name": "nadezhdkov"
+  },
+  "plugins": [
+    {
+      "name": "ctk",
+      "source": "./plugin",
+      "description": "Quality hooks backed by the ctk command: formatting, affected tests, destructive-command guard, secret scanning, notifications"
+    }
+  ]
+}
