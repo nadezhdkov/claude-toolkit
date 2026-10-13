@@ -82,6 +82,8 @@ Run `ctk` on its own for an overview:
 | [`ctk sandbox`](docs/commands/sandbox.md) | Runs untrusted code without network, with a read-only system, an empty home and resource limits |
 | [`ctk libdocs`](docs/commands/libdocs.md) | Installed version, declared constraint, README and API of a dependency; where a symbol is defined |
 | [`ctk map`](docs/commands/map.md) | Compact map of a repository's files and central symbols; where a symbol is used and which tests touch it |
+| [`ctk verify`](docs/commands/verify.md) | What is verified for the code as it is now: every `runq` run recorded per code state; fresh, failing, stale or never run |
+| [`ctk diffcheck`](docs/commands/diffcheck.md) | Deterministic checks of a change: removed API still in use, risky files, debug leftovers, code without tests |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 

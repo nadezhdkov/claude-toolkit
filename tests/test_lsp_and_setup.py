@@ -118,3 +118,10 @@ def test_setup_installs_the_plugin_once_and_uninstall_removes_it(home, monkeypat
 def test_marketplace_source_is_this_checkout():
     source = Path(setup.marketplace_source())
     assert (source / ".claude-plugin" / "marketplace.json").is_file()
+
+
+def test_claude_md_section_stays_small():
+    # Read by every model call of every session (see docs/design.md).
+    assert len(setup.SNIPPET) < 1200
+    for command in ("doctor", "runq", "map", "libdocs", "shoot", "sandbox"):
+        assert f"`ctk {command}" in setup.SNIPPET

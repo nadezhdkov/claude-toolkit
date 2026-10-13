@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Plan and coordinate work across the ctk subagents (reviewer, researcher, test-runner) — when delegating pays off, how to brief them, running independent ones in parallel, and the implement → test → review loop with their verdicts. Use for multi-part tasks, wide research, or verifying a finished change; not for small, sequential edits.
+description: When and how to delegate to the ctk subagents (test-runner, reviewer, researcher): briefs, parallel fan-out, the implement-test-review loop. Not for small or sequential edits.
 ---
 
 # Orchestrate subagents

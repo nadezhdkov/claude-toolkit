@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Finish a change and open a pull request — right branch, synced with the base, project checks green, diff reviewed, changelog, Conventional Commit, push, PR with summary and test plan, CI watched. Use when the work is done and the user wants it committed, pushed or turned into a PR. A project's own ship/release process takes precedence.
+description: Finish a change as a pull request: checks, diff review, changelog, commit, push, CI. Use when the work is done; a project's own ship process comes first.
 ---
 
 # Ship a change
@@ -17,10 +17,13 @@ below only to fill gaps. Stop at the first failing step and explain it.
 2. **Sync.** `git fetch origin` and merge or rebase the base branch as the
    project prefers. On conflicts in code you did not write, stop and ask.
 3. **Checks.** Run the project's linter, formatter check, type checker and
-   tests, as CI does, through `ctk runq -- <command>`. Everything must pass;
-   a failure you believe is unrelated still gets reported, not hidden.
+   tests, as CI does: `ctk verify run` (configured or detected checks), or
+   `ctk runq -- <command>` for others (also recorded). `ctk verify` must show
+   every check ✓ for the current code, not `~ stale`; a failure you believe is
+   unrelated still gets reported, not hidden.
    For UI changes run the `visual-qa` skill; for audio, `ctk audiocheck`.
-4. **Review the diff.** `git status` and `git diff <base>...`:
+4. **Review the diff.** `ctk diffcheck` first (removed API still in use, risky
+   files, debug leftovers, missing tests), then `git status` and `git diff <base>...`:
    - only files this change needs; no debug code, stray logs, commented-out
      code, unrelated reformatting, generated files or secrets;
    - tests cover the new behaviour;
@@ -39,7 +42,7 @@ below only to fill gaps. Stop at the first failing step and explain it.
    `gh pr create` with:
    - a title in the commit convention;
    - **Summary**: what and why, in a few bullets;
-   - **Test plan**: checkboxes for what was run (ticked) and what remains (unticked);
+   - **Test plan**: checkboxes for what was run (ticked, as `ctk verify` shows it) and what remains (unticked);
    - links to issues (`Closes #N`) and to stacked PRs.
 8. **Watch CI.** `gh pr checks <n> --watch`. On failure, read the log
    (`gh run view --log-failed`), fix with a new commit, push, repeat.

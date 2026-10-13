@@ -30,21 +30,17 @@ END = "<!-- claude-toolkit:end -->"
 SNIPPET = f"""{START}
 ## claude-toolkit
 
-Prefer these commands (installed by claude-toolkit) over ad-hoc scripts:
+Use these `ctk` commands instead of ad-hoc scripts:
 
-- `ctk doctor [path]`: toolchain versions vs project pins and dependency sync; run it first when a build or test fails oddly, and before starting work in an unfamiliar repo.
-- `ctk runq -- <command>`: run tests, builds and linters whose output may be long; prints failures, summary and the full-log path, and keeps the exit code.
-- `ctk lsp [path]`: which language servers the project needs and whether they are installed; `--install` asks before installing.
-- `ctk sessions [--since DAYS]`: usage metrics from Claude Code transcripts (counts only).
-- `ctk shoot web <url|file> | godot [project] | desktop -- <cmd>`: deterministic screenshot to read after changing a UI; `--baseline shots/x.png` compares (exit 1 with box and diff image when it changed); `ctk shoot sheet` combines several images into one.
-- `ctk sandbox [--net] [--dir DIR] -- <cmd>`: run untrusted code (unknown repositories' tests or builds, downloaded scripts) with no network, an empty home, the system read-only and resource limits.
-- `ctk map [path]`: before exploring an unfamiliar or large repository, read its compact map of files and central symbols; `ctk map --uses NAME` shows where a symbol is defined and used and which tests touch it.
-- `ctk libdocs <package> [--find SYMBOL]`: before using a dependency's API, check the installed version, its README and the real signatures instead of relying on memory.
-- `ctk audiocheck <files|dirs> [--loop] [--target LUFS] [--images]`: loudness, clipping, silence and loop clicks of audio files; run it after generating or editing audio instead of assuming it sounds right.
+- `ctk doctor [path]`: toolchain and dependency check; run it first when a build or test fails oddly.
+- `ctk runq -- <cmd>`: long test, build or lint output reduced to failures, summary and log path.
+- `ctk verify [run]`: what is verified for the code as it is now; never claim checks pass without a fresh ✓ there.
+- `ctk map [path]`, `ctk map --uses NAME`: repository map before exploring; where a symbol is used.
+- `ctk libdocs <pkg> [--find SYMBOL]`: installed version and real API of a dependency, before using it.
+- `ctk shoot web|godot|desktop`: screenshot after a UI change (`--baseline` compares); `ctk audiocheck <files>` for audio.
+- `ctk sandbox -- <cmd>`: run untrusted code without network, with a read-only system.
 
-If a ctk plugin hook blocks a command (guard-destructive, secrets) or reports failing tests, do not work around it: fix the cause or ask the user.
-
-Commands that change the system ask for confirmation; without a terminal they print the plan and exit 3, so show the plan to the user and rerun with `--yes` only after they approve.
+If a ctk hook blocks a command or reports failing tests, fix the cause or ask the user. Commands that change the system ask first; without a terminal they exit 3: show the plan, rerun with `--yes` only after approval.
 {END}
 """
 

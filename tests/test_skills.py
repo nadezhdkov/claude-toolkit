@@ -25,7 +25,8 @@ def test_skill_is_well_formed_and_cheap_to_list(name):
     meta = frontmatter(text)
     assert meta["name"] == name
     # The description is loaded into every session: keep it short (the hard limit is 1,536).
-    assert 80 <= len(meta["description"]) <= 400
+    # Read by every model call of every session: the trigger only (see docs/design.md).
+    assert 80 <= len(meta["description"]) <= 200
     assert len(text.splitlines()) < 200
 
 

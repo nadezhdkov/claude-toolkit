@@ -1,6 +1,6 @@
 ---
 name: security-pass
-description: Review a change for security problems before it ships — secrets, injection, path traversal, authentication and authorisation gaps, unsafe deserialisation, SSRF, risky dependencies and CI changes — with evidence for every finding. Use before opening a PR that touches input handling, auth, file or shell access, network calls, dependencies or workflows, or when the user asks for a security review.
+description: Review a change for security problems (injection, paths, auth, secrets, dependencies, CI) with evidence. Use before a PR that touches inputs, auth, shell or dependencies.
 ---
 
 # Security pass
@@ -13,6 +13,7 @@ from input to impact; no generic advice.
 
 - Secrets: `gitleaks git --staged --redact` or `gitleaks detect --redact`
   on the branch (the ctk `secrets` hook already scans each commit).
+- Changed lockfiles, manifests, CI, container and `.env` files: `ctk diffcheck`.
 - Dependencies: if lockfiles changed, list added and upgraded packages
   (`git diff <base>... -- '*lock*' '*requirements*' go.sum Cargo.lock`).
   Run the ecosystem's audit (`npm audit`, `pip-audit`, `cargo audit`,

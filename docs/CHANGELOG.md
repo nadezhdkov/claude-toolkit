@@ -8,6 +8,26 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `continuity` hook: after a compaction, puts back the branch, commit,
+  uncommitted files, the `ctk verify` status of every check (stale ones
+  marked) and the branch's handoff file. The `handoff` skill now asks for a
+  source and date per fact, struck-through superseded decisions and
+  `ctk verify` lines with their commit.
+- `ctk diffcheck`: deterministic checks of the current change against a base
+  (default: the merge-base with the default branch, uncommitted and untracked
+  files included): public symbols removed or with changed signatures and where
+  removed ones are still used (high, exit 1), lockfiles, manifests, CI,
+  container, environment, generated, large and binary files, debug leftovers
+  and TODO comments in added lines, and source changed without tests. The
+  `reviewer` agent and the `ship` and `security-pass` skills start from it.
+- `ctk verify`: an evidence ledger. Every `ctk runq` run (and every
+  `affected-tests` run) inside a git repository is recorded with its exit code,
+  counts, log and a hash of the exact code state (HEAD, uncommitted changes,
+  untracked files); `ctk verify` shows each check as pass, fail, stale (it ran
+  on other code) or never, and exits 1 unless all are fresh and passing.
+  `ctk verify run` runs the configured (`[verify] commands`) or detected
+  checks. The `ship` skill, the `test-runner` agent and the CLAUDE.md section
+  use it.
 - `ctk map`: a compact, line-budgeted map of a repository's source files and
   their central symbols (Python via `ast`; JS/TS, Go, Rust, GDScript, Java and
   Kotlin via patterns), ranked by how many files mention a name and how few
@@ -84,6 +104,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The plugin's skill and agent descriptions and the `CLAUDE.md` section are
+  about half as long (about 820 always-on tokens instead of 1,570), keeping
+  each trigger; `ctk lsp` and `ctk sessions` left the section because people,
+  not Claude, run them.
 - CI installs bubblewrap and allows unprivileged user namespaces in the
   integration job, so the sandbox tests run there.
 - `ctk` loads command modules lazily, roughly halving start-up time (hooks run

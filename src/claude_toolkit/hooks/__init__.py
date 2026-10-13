@@ -15,7 +15,7 @@ from collections.abc import Callable
 
 from .base import Event, Outcome, cache_dir, load_config
 
-HOOKS = ("format-file", "affected-tests", "guard-destructive", "secrets", "notify", "agent-contract")
+HOOKS = ("format-file", "affected-tests", "guard-destructive", "secrets", "notify", "agent-contract", "continuity")
 
 
 def _handler(name: str) -> Callable[[Event], Outcome]:
@@ -29,6 +29,8 @@ def _handler(name: str) -> Callable[[Event], Outcome]:
         from .secrets import handle
     elif name == "agent-contract":
         from .agent_contract import handle
+    elif name == "continuity":
+        from .continuity import handle
     else:
         from .notify import handle
     return handle

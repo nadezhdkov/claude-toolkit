@@ -61,6 +61,8 @@ claude-toolkit/
 │   ├── sandbox.py        # bubblewrap jail with cgroup limits
 │   ├── libdocs.py        # installed dependency: version, README, API
 │   ├── map.py            # repository map and symbol uses
+│   ├── verify.py         # evidence ledger: checks per code state
+│   ├── diffcheck.py      # deterministic checks of a change
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers
@@ -84,6 +86,15 @@ Hooks are installed once, globally, and decide per project at run time: each
 hook detects whether it applies (for example the formatter runs only when the
 project configures one) and stays silent otherwise. A project can opt out with
 a `.claude-toolkit.toml` file at its root.
+
+## Always-on context budget
+
+Skill and agent descriptions and the `CLAUDE.md` section are read by every
+model call of every session, so they are kept to the trigger ("use when…"),
+with the procedure in the body that loads only on use. Budget: about 600
+tokens for the plugin (`claude plugin details ctk`) and 250 for the
+`CLAUDE.md` section; the benchmark measured the earlier, twice larger version
+at 8–12% more context on tasks the plugin did not change.
 
 ## Runtime dependencies
 

@@ -319,6 +319,9 @@ def run(command: list[str], *, keep_logs: int = 50) -> int:
     except KeyboardInterrupt:
         return 130
     print(summarise(command, done.output, done.exit_code, done.log_path, elapsed=done.elapsed))
+    from .verify import record
+
+    record(command, Path.cwd(), done.exit_code, done.output, done.elapsed, done.log_path)
     return done.exit_code
 
 

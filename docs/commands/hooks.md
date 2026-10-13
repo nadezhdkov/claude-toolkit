@@ -1,6 +1,6 @@
 # Hooks (`ctk` plugin) and `ctk hook`
 
-The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers six
+The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers seven
 hooks. Each is a one-line shell command that calls `ctk hook <name>` with the
 event JSON on stdin, so all logic lives in the tested `ctk` package.
 
@@ -11,6 +11,7 @@ event JSON on stdin, so all logic lives in the tested `ctk` package.
 | `guard-destructive` | before Bash | flags `rm -rf` outside the project, force-push to `main`/`master`, `git reset --hard` with uncommitted work; **warn-only by default** |
 | `secrets` | before Bash (`git commit`) | `gitleaks` on the staged changes; denies the commit on findings |
 | `notify` | waiting for input, end of a long turn | desktop notification, at most one per minute |
+| `continuity` | session resumes after a compaction | puts back the branch, commit, uncommitted files, `ctk verify` status and the branch's handoff file |
 | `agent-contract` | a ctk subagent finishes | sends a report that breaks its output contract back once ([agents](../agents.md)) |
 
 ## Install
@@ -134,6 +135,17 @@ The same scan works as a plain git hook, for commits made outside Claude Code:
 printf '#!/bin/sh\nexec ctk hook secrets --git\n' > .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
+
+## `continuity`
+
+A compaction replaces the conversation with a summary, and what the summary
+dropped is lost. On `SessionStart` with source `compact`, this hook adds facts
+that do not depend on it: the branch, the commit and the number of
+uncommitted files, every check `ctk verify` knows with its state for the code
+as it is now (`~ stale` when the code changed since it ran), and the branch's
+handoff file (`.claude/handoff/<branch>.md`, at most 60 lines, with its age).
+Silent outside a git repository, after other kinds of session start, or when
+there is nothing to report. It costs nothing until a compaction happens.
 
 ## `notify`
 
