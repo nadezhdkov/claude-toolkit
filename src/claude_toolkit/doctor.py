@@ -342,7 +342,7 @@ TOOLKIT_DEPENDENCIES = (
     ),
     Dependency("gh", "GitHub workflows (PRs, CI)", False, _pm("github-cli", "gh", "gh", "gh")),
     Dependency("ffmpeg", "audio checks (`ctk audiocheck`) and desktop captures", False, _pm("ffmpeg")),
-    Dependency("bwrap", "sandbox for untrusted code (upcoming `ctk sandbox`)", False, _pm("bubblewrap"), shipped=False),
+    Dependency("bwrap", "sandbox for untrusted code (`ctk sandbox`)", False, _pm("bubblewrap")),
     Dependency(
         "Xvfb",
         "headless desktop and Godot screenshots (`ctk shoot`)",

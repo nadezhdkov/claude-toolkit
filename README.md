@@ -79,6 +79,7 @@ Run `ctk` on its own for an overview:
 | [`ctk sessions`](docs/commands/sessions.md) | Counts-only metrics from Claude Code transcripts |
 | [`ctk shoot`](docs/commands/shoot.md) | Deterministic screenshots of web pages, Godot scenes and desktop apps; baselines and contact sheets |
 | [`ctk audiocheck`](docs/commands/audiocheck.md) | Loudness, clipping, silence and loop seams of audio files, with waveform and spectrogram images |
+| [`ctk sandbox`](docs/commands/sandbox.md) | Runs untrusted code without network, with a read-only system, an empty home and resource limits |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 
@@ -147,6 +148,17 @@ and a spectrogram per file.
 ctk audiocheck assets/audio --target -16 --images
 ```
 
+### `ctk sandbox`: run untrusted code safely
+
+Runs a command with bubblewrap: no network, the system read-only, an empty
+home (no SSH keys or tokens), only the project directory writable, a cleared
+environment, and memory, CPU, process and time limits.
+
+```bash
+ctk sandbox -- npm test
+ctk sandbox --dir ~/src/unknown-repo --timeout 300 -- make
+```
+
 ## Hooks plugin
 
 The `ctk` Claude Code plugin adds hooks that run outside the conversation and
@@ -184,8 +196,8 @@ See [docs/skills.md](docs/skills.md).
 
 `0.1.0` shipped the foundation: `doctor`, `runq`, `lsp`, `sessions` and the
 installer; then came the quality hooks plugin, `ctk shoot`, `ctk audiocheck` and
-the process skills. Next come `ctk sandbox` for untrusted code, `ctk libdocs`
-for dependency APIs, and subagents with output contracts. See [docs/roadmap.md](docs/roadmap.md).
+the process skills and `ctk sandbox`. Next come `ctk libdocs` for dependency
+APIs and subagents with output contracts. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Development
 

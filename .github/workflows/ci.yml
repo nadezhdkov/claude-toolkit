@@ -51,12 +51,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       # One job installs the external tools so the integration tests (ffmpeg, Xvfb,
-      # ImageMagick) run instead of being skipped; it fails if any test is skipped.
+      # ImageMagick, bubblewrap) run instead of being skipped; it fails if any test is skipped.
       - name: Install integration tools
         if: matrix.python == '3.12'
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends ffmpeg xvfb imagemagick
+          sudo apt-get install -y -q --no-install-recommends ffmpeg xvfb imagemagick bubblewrap
+          # Ubuntu 24.04 restricts unprivileged user namespaces, which bubblewrap needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Unit tests
         if: matrix.python != '3.12'
         run: uv run pytest -v

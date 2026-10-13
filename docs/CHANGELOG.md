@@ -8,6 +8,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk sandbox`: runs a command in a bubblewrap sandbox with no network, the
+  system read-only, an empty home (toolchains read-only, credentials never
+  mounted), a cleared environment, the target directory read-write (or
+  `--read-only`), and memory, CPU and process limits through a systemd user
+  scope plus a wall-clock timeout. Defaults follow the machine's RAM (memory:
+  half of it, at most 4G; tmpfs `/tmp` and home: an eighth, at most 1G). Project defaults in `[sandbox]` of
+  `.claude-toolkit.toml`; `--dry-run` shows the mounts and the command.
+- `ctk doctor --toolkit` checks for bubblewrap.
+
+### Changed
+
+- CI installs bubblewrap and allows unprivileged user namespaces in the
+  integration job, so the sandbox tests run there.
+
+### Added
+
 - Process skills in the `ctk` plugin: `debug`, `ship`, `handoff`,
   `onboard-repo`, `visual-qa` and `security-pass` (`/ctk:<name>`), which use
   the `ctk` commands for their deterministic steps and defer to a project's own

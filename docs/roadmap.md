@@ -43,9 +43,9 @@ Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 `debug`, `ship`, `handoff` (progress file across sessions), `onboard-repo`,
 `visual-qa` and `security-pass`, in the `ctk` plugin ([docs/skills.md](skills.md)).
 
-## ⏳ Phase 5 — isolation and docs
+## 🚧 Phase 5 — isolation and docs
 
-- `ctk sandbox`: bubblewrap profile without network, read-only system, only
+- ✅ `ctk sandbox` ([docs](commands/sandbox.md)): bubblewrap profile without network, read-only system, only
   the target mounted, CPU/memory/time limits.
 - `ctk libdocs`: installed version, source path, README and types of a
   dependency, to stop writing code against the wrong API version.
