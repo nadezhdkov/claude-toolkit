@@ -85,6 +85,12 @@ def _audiocheck(args: argparse.Namespace) -> int:
     return audiocheck.run(args)
 
 
+def _sandbox(args: argparse.Namespace) -> int:
+    from . import sandbox
+
+    return sandbox.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -107,6 +113,7 @@ OVERVIEW = (
     ("sessions", "counts-only metrics from Claude Code transcripts"),
     ("shoot", "deterministic screenshots (web, Godot, desktop), baselines, contact sheets"),
     ("audiocheck", "loudness, clipping, silence and loop seams of audio files, plus images"),
+    ("sandbox", "run untrusted code without network, with a read-only system and limits"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -237,6 +244,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--strict", action="store_true", help="warnings also fail (exit 1)")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_audiocheck)
+
+    p = sub.add_parser("sandbox", help="run a command in a bubblewrap sandbox (no network, limits)")
+    p.add_argument("--dir", default=".", help="directory mounted read-write (default .)")
+    p.add_argument("--read-only", action="store_true", help="mount the directory read-only")
+    p.add_argument("--net", action="store_true", help="allow network access")
+    p.add_argument("--ro", action="append", metavar="PATH", help="also mount PATH read-only (repeatable)")
+    p.add_argument("--rw", action="append", metavar="PATH", help="also mount PATH read-write (repeatable)")
+    p.add_argument("--env", action="append", metavar="NAME[=VALUE]", help="pass an environment variable")
+    p.add_argument("--no-toolchains", action="store_true", help="hide toolchains installed under the home")
+    p.add_argument("--memory", help="memory limit (default: half the RAM, at most 4G)")
+    p.add_argument("--tmp-size", help="size of /tmp and of the home tmpfs, which use RAM (default: RAM/8, at most 1G)")
+    p.add_argument("--cpus", type=float, help="CPU limit in cores (default 2)")
+    p.add_argument("--pids", type=int, help="process limit (default 512)")
+    p.add_argument("--timeout", type=float, metavar="S", help="wall-clock limit in seconds (default 600)")
+    p.add_argument("--dry-run", action="store_true", help="print the sandbox and the bwrap command only")
+    p.add_argument("command", nargs=argparse.REMAINDER, help="-- <command> [args...]")
+    p.set_defaults(func=_sandbox)
 
     from .hooks import HOOKS
 

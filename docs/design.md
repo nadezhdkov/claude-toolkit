@@ -58,6 +58,7 @@ claude-toolkit/
 │   ├── shoot_web.py      # Playwright script run under `uv run --with playwright`
 │   ├── png.py            # stdlib PNG reader/writer
 │   ├── audiocheck.py     # loudness, clipping, silence, loop seams
+│   ├── sandbox.py        # bubblewrap jail with cgroup limits
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers

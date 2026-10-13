@@ -5,6 +5,8 @@ import pytest
 
 from claude_toolkit import doctor
 
+UNRELEASED = doctor.Dependency("future-tool", "a tool that has not shipped yet", False, {}, shipped=False)
+
 
 @pytest.fixture
 def versions(monkeypatch):
@@ -90,12 +92,14 @@ def test_project_without_pins_is_ok(tmp_path, versions):
 
 def test_toolkit_check_marks_required_and_optional(monkeypatch, versions):
     versions["python"] = (3, 12, 0)
-    missing = ("uv", "ffmpeg", "gh", "bwrap")
+    missing = ("uv", "ffmpeg", "gh", "bwrap", "future-tool")
+    monkeypatch.setattr(doctor, "TOOLKIT_DEPENDENCIES", (*doctor.TOOLKIT_DEPENDENCIES, UNRELEASED))
     monkeypatch.setattr(doctor, "which", lambda name: None if name in missing else f"/usr/bin/{name}")
     report = doctor.check_toolkit(doctor.Host("linux", "arch"))
     by_check = {f.check: f for f in report.findings}
     assert by_check["uv"].level == "error" and "pacman" in by_check["uv"].fix
     assert by_check["gh"].level == "warn"
     assert by_check["ffmpeg"].level == "warn"
-    assert "bwrap" not in by_check, "dependencies of unreleased tools stay silent"
+    assert by_check["bwrap"].level == "warn"
+    assert "future-tool" not in by_check, "dependencies of unreleased tools stay silent"
     assert report.errors == 1
