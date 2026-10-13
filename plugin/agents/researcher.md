@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Answers one focused question by reading code, installed dependencies and documentation, and returns a short answer where every claim cites a file:line or URL. Use for questions that need wide reading (how does X work here, which API does version Y have, where is Z handled) so the reading stays out of the main conversation.
+description: Answers one focused question from the code, installed dependencies and docs; every claim cites file:line or a URL. Use when answering needs wide reading.
 tools: Read, Grep, Glob, Bash, LSP, WebFetch, WebSearch
 disallowedTools: Edit, Write, NotebookEdit, Agent
 model: sonnet

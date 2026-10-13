@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Keep a short progress file so the next session (or another person) can resume without re-deriving context — write it before a session ends or the context fills up, read it first when resuming. Use when the user says to stop, pause, continue tomorrow, "handoff", or asks to resume earlier work.
+description: Write or resume a per-branch progress file so unfinished work survives the session. Use when stopping, pausing or resuming earlier work.
 argument-hint: "[write|resume]"
 ---
 

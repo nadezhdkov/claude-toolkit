@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews a diff or branch for correctness bugs, regressions, missing tests and risky changes, and returns findings with file:line evidence and a verdict. Use proactively after implementing a change and before opening a pull request; give it the base branch or commit range to review.
+description: Reviews a diff for bugs, regressions, missing tests and risky changes, with file:line evidence and a verdict. Use proactively before opening a pull request.
 tools: Read, Grep, Glob, Bash, LSP
 disallowedTools: Edit, Write, NotebookEdit, Agent
 model: inherit

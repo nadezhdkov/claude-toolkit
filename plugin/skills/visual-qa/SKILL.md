@@ -1,6 +1,6 @@
 ---
 name: visual-qa
-description: Check a UI change by looking at it — deterministic screenshots with ctk shoot at several sizes and themes, a checklist of visual defects, baseline comparison, fixes verified by new captures. Use after changing anything visible (web pages, components, CSS, Godot scenes, desktop windows) and before saying UI work is done.
+description: Check a UI change by looking at deterministic screenshots (ctk shoot) against a defect checklist and baselines. Use before calling visible work done.
 ---
 
 # Visual QA

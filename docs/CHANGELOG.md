@@ -84,6 +84,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The plugin's skill and agent descriptions and the `CLAUDE.md` section are
+  about half as long (about 820 always-on tokens instead of 1,570), keeping
+  each trigger; `ctk lsp` and `ctk sessions` left the section because people,
+  not Claude, run them.
 - CI installs bubblewrap and allows unprivileged user namespaces in the
   integration job, so the sandbox tests run there.
 - `ctk` loads command modules lazily, roughly halving start-up time (hooks run

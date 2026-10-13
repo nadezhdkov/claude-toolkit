@@ -24,7 +24,7 @@ def test_the_phase_6_agents_exist():
 def test_agent_is_read_only_cheap_to_list_and_has_a_contract(name):
     text = (AGENTS / f"{name}.md").read_text()
     meta = frontmatter(text)
-    assert meta["name"] == name and 80 <= len(meta["description"]) <= 400
+    assert meta["name"] == name and 80 <= len(meta["description"]) <= 200
     denied = {tool.strip() for tool in meta["disallowedTools"].split(",")}
     assert {"Edit", "Write", "NotebookEdit", "Agent"} <= denied, "agents report; they never edit or spawn"
     contract = agent_contract.parse_contract(text)

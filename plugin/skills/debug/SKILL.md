@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Find the root cause of a bug, failing test, crash or wrong output before changing code — reproduce, check the environment, narrow down, prove the cause, fix it with a regression test. Use when something fails and the cause is not already obvious, or after a first fix attempt did not work.
+description: Find and prove the root cause of a bug, crash or failing test before changing code, then fix it with a regression test. Use when the cause is not obvious or a first fix failed.
 ---
 
 # Debug: root cause before fix

@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Finish a change and open a pull request — right branch, synced with the base, project checks green, diff reviewed, changelog, Conventional Commit, push, PR with summary and test plan, CI watched. Use when the work is done and the user wants it committed, pushed or turned into a PR. A project's own ship/release process takes precedence.
+description: Finish a change as a pull request: checks, diff review, changelog, commit, push, CI. Use when the work is done; a project's own ship process comes first.
 ---
 
 # Ship a change

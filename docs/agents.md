@@ -54,7 +54,7 @@ The [`orchestrate`](../plugin/skills/orchestrate/SKILL.md) skill
 ## Cost
 
 Agent descriptions are listed in every session like skill descriptions; the
-three add about 300 tokens, and the whole plugin about 1,050
+three add about 180 tokens, and the whole plugin about 580
 (`claude plugin details ctk`). A subagent's own
 work stays in its context; only its report (at most 25–40 lines) comes back.
 

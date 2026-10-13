@@ -1,6 +1,6 @@
 ---
 name: onboard-repo
-description: Get oriented in an unfamiliar repository before changing it — environment and language servers, how to build, test and lint, the layout and entry points, the project's rules, and a baseline test run. Use at the start of work in a repo you have not seen in this session, or when the user asks how a project is organised.
+description: Get oriented in an unfamiliar repository before changing it: rules, environment, real commands, layout, baseline tests.
 ---
 
 # Onboard a repository

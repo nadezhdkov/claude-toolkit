@@ -1,6 +1,6 @@
 ---
 name: test-runner
-description: Runs a project's tests, type checks, linters or build through ctk runq and reports only counts, failing items with file:line, a one-line likely cause each, and the log path. Use proactively after code changes, and whenever test or build output would be long, so it never floods the main conversation.
+description: Runs tests, linters or builds through ctk runq and returns counts, failures with file:line and the log path. Use proactively after code changes.
 tools: Bash, Read, Grep, Glob
 disallowedTools: Edit, Write, NotebookEdit, Agent
 model: haiku
