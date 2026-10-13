@@ -36,6 +36,7 @@ Prefer these commands (installed by claude-toolkit) over ad-hoc scripts:
 - `ctk runq -- <command>`: run tests, builds and linters whose output may be long; prints failures, summary and the full-log path, and keeps the exit code.
 - `ctk lsp [path]`: which language servers the project needs and whether they are installed; `--install` asks before installing.
 - `ctk sessions [--since DAYS]`: usage metrics from Claude Code transcripts (counts only).
+- `ctk shoot web <url|file> | godot [project] | desktop -- <cmd>`: deterministic screenshot to read after changing a UI; `--baseline shots/x.png` compares (exit 1 with box and diff image when it changed); `ctk shoot sheet` combines several images into one.
 
 If a ctk plugin hook blocks a command (guard-destructive, secrets) or reports failing tests, do not work around it: fix the cause or ask the user.
 
