@@ -95,8 +95,9 @@ def relay_config(cwd: Path) -> dict[str, Any]:
 # --- Terminal and command ----------------------------------------------------------
 
 
-def detect_terminal(env: Mapping[str, str], which: Callable[[str], str | None] = shutil.which) -> str | None:
+def detect_terminal(env: Mapping[str, str], which: Callable[[str], str | None] | None = None) -> str | None:
     """The terminal Claude Code runs in, else the first installed one (graphical ones need a display)."""
+    which = which or shutil.which
     for name, variable in MARKERS:
         if env.get(variable) and which(TERMINALS[name][0]):
             return name
