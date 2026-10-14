@@ -298,6 +298,8 @@ def _free_display() -> int:
 @contextlib.contextmanager
 def virtual_display(size: tuple[int, int]) -> Iterator[str]:
     """A private Xvfb display (``:N``) for the duration of the block."""
+    if os.name == "nt":
+        raise ShootError("ctk shoot desktop needs an X server (Xvfb): Linux or macOS with XQuartz")
     xvfb = shutil.which("Xvfb")
     if not xvfb:
         raise ShootError("Xvfb is not installed (see `ctk doctor --toolkit` for the install command)")

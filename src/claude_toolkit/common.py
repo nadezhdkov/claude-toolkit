@@ -60,17 +60,26 @@ def run_text(args: list[str], timeout: float = 10.0) -> str | None:
 @dataclass(frozen=True)
 class Host:
     system: str  # linux, darwin, windows
-    distro: str  # arch, debian, fedora, macos, unknown
+    distro: str  # arch, debian, fedora, suse, macos, windows, unknown
 
     @property
     def package_manager(self) -> str | None:
-        return {"arch": "pacman", "debian": "apt", "fedora": "dnf", "macos": "brew", "suse": "zypper"}.get(self.distro)
+        return {
+            "arch": "pacman",
+            "debian": "apt",
+            "fedora": "dnf",
+            "macos": "brew",
+            "suse": "zypper",
+            "windows": "winget",
+        }.get(self.distro)
 
 
 def detect_host() -> Host:
     system = platform.system().lower()
     if system == "darwin":
         return Host(system, "macos")
+    if system == "windows":
+        return Host(system, "windows")
     if system != "linux":
         return Host(system, "unknown")
     ids: set[str] = set()

@@ -50,11 +50,45 @@ def installed(*names):
 
 def test_detect_terminal_prefers_the_one_claude_runs_in():
     env = {"KONSOLE_VERSION": "1", "DISPLAY": ":0"}
-    assert relay.detect_terminal(env, installed("konsole", "alacritty")) == "konsole"
-    assert relay.detect_terminal({"TMUX": "/tmp/t", **env}, installed("tmux", "konsole")) == "tmux"
-    assert relay.detect_terminal(env, installed("alacritty")) == "alacritty", "marker without binary: fall back"
-    assert relay.detect_terminal({}, installed("alacritty")) is None, "no display, no graphical terminal"
-    assert relay.detect_terminal({"WAYLAND_DISPLAY": "w"}, installed()) is None
+
+    def detect(env, which):
+        return relay.detect_terminal(env, which, system="Linux")
+
+    assert detect(env, installed("konsole", "alacritty")) == "konsole"
+    assert detect({"TMUX": "/tmp/t", **env}, installed("tmux", "konsole")) == "tmux"
+    assert detect(env, installed("alacritty")) == "alacritty", "marker without binary: fall back"
+    assert detect({}, installed("alacritty")) is None, "no display, no graphical terminal"
+    assert detect({"WAYLAND_DISPLAY": "w"}, installed()) is None
+
+
+def test_detect_terminal_on_macos_and_windows():
+    mac = installed("osascript")
+    assert relay.detect_terminal({"TERM_PROGRAM": "iTerm.app"}, mac, system="Darwin") == "iterm"
+    assert relay.detect_terminal({"TERM_PROGRAM": "vscode"}, mac, system="Darwin") == "terminal"
+    assert relay.detect_terminal({}, installed(), system="Darwin") is None
+    assert relay.detect_terminal({"WT_SESSION": "x"}, installed("wt", "powershell"), system="Windows") == "wt"
+    assert relay.detect_terminal({}, installed("powershell"), system="Windows") == "console"
+
+
+def test_terminals_that_do_not_inherit_the_environment_carry_it(tmp_path):
+    import base64
+
+    cwd = tmp_path / "it's here"
+    env = {"CTK_RELAY": "1", "CTK_RELAY_FROM": "old"}
+    command = ["claude", "--name", "relay feat/x", "Continue (ctk relay); run `ctk relay --show`"]
+    osa = relay.terminal_command("terminal", cwd, command, env)
+    assert osa[0] == "osascript" and 'do script "cd ' in osa[2]
+    assert "env CTK_RELAY=1 CTK_RELAY_FROM=old claude --name" in osa[2]
+    iterm = relay.terminal_command("iterm", cwd, command, env)
+    assert "create window with default profile command" in iterm[2] and "/bin/sh -c" in iterm[2]
+    wt = relay.terminal_command("wt", cwd, command, env)
+    assert wt[:3] == ["wt", "-d", str(cwd)] and wt[3] == "powershell" and wt[-2] == "-EncodedCommand"
+    script = base64.b64decode(wt[-1]).decode("utf-16-le")
+    assert "$env:CTK_RELAY = '1'" in script and "$env:CTK_RELAY_FROM = 'old'" in script
+    assert f"Set-Location -LiteralPath '{str(cwd).replace(chr(39), chr(39) * 2)}'" in script
+    assert "& 'claude' '--name' 'relay feat/x' 'Continue (ctk relay); run `ctk relay --show`'" in script
+    assert relay.terminal_command("console", cwd, command, env)[0] == "powershell"
+    assert relay.terminal_command("konsole", cwd, ["claude"], env)[-1] == "claude", "inheriting ones need nothing"
 
 
 def test_commands_and_environment_of_the_new_session(tmp_path):
@@ -81,7 +115,7 @@ def test_commands_and_environment_of_the_new_session(tmp_path):
 def launched(monkeypatch):
     calls = []
 
-    def fake_launch(command, cwd, env):
+    def fake_launch(command, cwd, env, new_console=False):
         calls.append((command, cwd, env))
         return None
 
@@ -156,7 +190,7 @@ def test_relay_reports_a_terminal_that_fails(tmp_path, monkeypatch, capsys, laun
     repo = git_repo(tmp_path / "repo")
     write_handoff(repo)
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "old")
-    monkeypatch.setattr(relay, "_launch", lambda *a: "konsole exited with 1")
+    monkeypatch.setattr(relay, "_launch", lambda *a, **k: "konsole exited with 1")
     assert ctk(repo, monkeypatch, "--yes") == 1
     assert "could not open" in capsys.readouterr().out and not relay.locked("old")
 

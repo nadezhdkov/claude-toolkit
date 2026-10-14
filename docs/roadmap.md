@@ -127,9 +127,9 @@ the CI as the proof since the maintainer works on Linux.
 - ✅ Windows install: `install.ps1`, the plugin launcher, and hooks under Git
   Bash (Claude Code runs hooks there; without Git Bash it has no Bash tool,
   which the plugin's workflow needs).
-- ⏳ `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal,
+- ✅ `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal,
   PowerShell); `notify` on Windows; `doctor` install hints for winget.
-- ⏳ Clear messages where there is no equivalent: `sandbox` (bubblewrap) and
+- ✅ Clear messages where there is no equivalent: `sandbox` (bubblewrap) and
   `shoot desktop` (Xvfb) stay Linux-only.
 
 Done when CI passes on all three systems and `install` works on each.

@@ -17,7 +17,9 @@ same worktree.
 
 from __future__ import annotations
 
+import base64
 import os
+import platform
 import shlex
 import shutil
 import subprocess
@@ -52,31 +54,87 @@ SESSION_ENV = (
     "CTK_RELAY_FROM",
 )
 
-# name -> (binary, prefix before the command, given the working directory)
-TERMINALS: dict[str, tuple[str, Callable[[str], list[str]]]] = {
-    "tmux": ("tmux", lambda cwd: ["tmux", "new-window", "-c", cwd, "-n", "relay", "--"]),
-    "konsole": ("konsole", lambda cwd: ["konsole", "--workdir", cwd, "-e"]),
-    "kitty": ("kitty", lambda cwd: ["kitty", "--directory", cwd, "--"]),
-    "alacritty": ("alacritty", lambda cwd: ["alacritty", "--working-directory", cwd, "-e"]),
-    "wezterm": ("wezterm", lambda cwd: ["wezterm", "start", "--cwd", cwd, "--"]),
-    "ghostty": ("ghostty", lambda cwd: ["ghostty", f"--working-directory={cwd}", "-e"]),
-    "gnome-terminal": ("gnome-terminal", lambda cwd: ["gnome-terminal", f"--working-directory={cwd}", "--"]),
-    "foot": ("foot", lambda cwd: ["foot", "-D", cwd]),
-    "xterm": ("xterm", lambda cwd: ["xterm", "-e"]),
-}
-# The terminal Claude Code itself runs in, recognised by its environment.
-MARKERS = (
-    ("tmux", "TMUX"),
-    ("konsole", "KONSOLE_VERSION"),
-    ("kitty", "KITTY_WINDOW_ID"),
-    ("alacritty", "ALACRITTY_WINDOW_ID"),
-    ("alacritty", "ALACRITTY_SOCKET"),
-    ("wezterm", "WEZTERM_PANE"),
-    ("ghostty", "GHOSTTY_RESOURCES_DIR"),
-    ("gnome-terminal", "GNOME_TERMINAL_SCREEN"),
-)
-FALLBACK_ORDER = ("konsole", "alacritty", "kitty", "gnome-terminal", "wezterm", "ghostty", "foot", "xterm")
 
+def _prefix(*parts: str) -> Callable[[str, list[str], dict[str, str]], list[str]]:
+    """A terminal that runs ``command`` itself and inherits the environment: ``{cwd}`` is replaced."""
+    return lambda cwd, command, _env: [part.replace("{cwd}", cwd) for part in parts] + command
+
+
+def _shell_line(cwd: str, command: list[str], env: dict[str, str]) -> str:
+    assignments = [f"{key}={shlex.quote(value)}" for key, value in env.items()]
+    return f"cd {shlex.quote(cwd)} && " + shlex.join(["env", *assignments, *command] if assignments else command)
+
+
+def _applescript(text: str) -> str:
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _powershell(cwd: str, command: list[str], env: dict[str, str]) -> list[str]:
+    """PowerShell running ``command`` in ``cwd`` with ``env``, as -EncodedCommand: nothing to escape for wt or cmd."""
+
+    def quote(text: str) -> str:
+        return "'" + text.replace("'", "''") + "'"
+
+    lines = [f"$env:{key} = {quote(value)}" for key, value in env.items()]
+    lines += [f"Set-Location -LiteralPath {quote(cwd)}", "& " + " ".join(quote(part) for part in command)]
+    encoded = base64.b64encode("\n".join(lines).encode("utf-16-le")).decode("ascii")
+    return ["powershell", "-NoLogo", "-NoProfile", "-EncodedCommand", encoded]
+
+
+# name -> (binary that must be installed, argv for the working directory, the command and the relay variables).
+# Terminals opened by another process (macOS apps, Windows Terminal) do not inherit our environment, so
+# those carry the variables in the command line.
+TERMINALS: dict[str, tuple[str, Callable[[str, list[str], dict[str, str]], list[str]]]] = {
+    "tmux": ("tmux", _prefix("tmux", "new-window", "-c", "{cwd}", "-n", "relay", "--")),
+    "konsole": ("konsole", _prefix("konsole", "--workdir", "{cwd}", "-e")),
+    "kitty": ("kitty", _prefix("kitty", "--directory", "{cwd}", "--")),
+    "alacritty": ("alacritty", _prefix("alacritty", "--working-directory", "{cwd}", "-e")),
+    "wezterm": ("wezterm", _prefix("wezterm", "start", "--cwd", "{cwd}", "--")),
+    "ghostty": ("ghostty", _prefix("ghostty", "--working-directory={cwd}", "-e")),
+    "gnome-terminal": ("gnome-terminal", _prefix("gnome-terminal", "--working-directory={cwd}", "--")),
+    "foot": ("foot", _prefix("foot", "-D", "{cwd}")),
+    "xterm": ("xterm", _prefix("xterm", "-e")),
+    "terminal": (  # macOS Terminal.app
+        "osascript",
+        lambda cwd, command, env: [
+            "osascript",
+            "-e",
+            f'tell application "Terminal" to do script {_applescript(_shell_line(cwd, command, env))}',
+            "-e",
+            'tell application "Terminal" to activate',
+        ],
+    ),
+    "iterm": (
+        "osascript",
+        lambda cwd, command, env: [
+            "osascript",
+            "-e",
+            'tell application "iTerm" to create window with default profile command '
+            + _applescript("/bin/sh -c " + shlex.quote(_shell_line(cwd, command, env))),
+        ],
+    ),
+    "wt": ("wt", lambda cwd, command, env: ["wt", "-d", cwd, *_powershell(cwd, command, env)]),
+    "console": ("powershell", lambda cwd, command, env: _powershell(cwd, command, env)),  # a new Windows console
+}
+# The terminal Claude Code itself runs in, recognised by its environment: (name, variable, value or any).
+MARKERS: tuple[tuple[str, str, str | None], ...] = (
+    ("tmux", "TMUX", None),
+    ("konsole", "KONSOLE_VERSION", None),
+    ("kitty", "KITTY_WINDOW_ID", None),
+    ("alacritty", "ALACRITTY_WINDOW_ID", None),
+    ("alacritty", "ALACRITTY_SOCKET", None),
+    ("wezterm", "WEZTERM_PANE", None),
+    ("ghostty", "GHOSTTY_RESOURCES_DIR", None),
+    ("gnome-terminal", "GNOME_TERMINAL_SCREEN", None),
+    ("iterm", "TERM_PROGRAM", "iTerm.app"),
+    ("terminal", "TERM_PROGRAM", "Apple_Terminal"),
+    ("wt", "WT_SESSION", None),
+)
+FALLBACK_ORDER = {
+    "Linux": ("konsole", "alacritty", "kitty", "gnome-terminal", "wezterm", "ghostty", "foot", "xterm"),
+    "Darwin": ("terminal",),
+    "Windows": ("wt", "console"),
+}
 
 # --- Configuration ---------------------------------------------------------------
 
@@ -95,17 +153,20 @@ def relay_config(cwd: Path) -> dict[str, Any]:
 # --- Terminal and command ----------------------------------------------------------
 
 
-def detect_terminal(env: Mapping[str, str], which: Callable[[str], str | None] | None = None) -> str | None:
-    """The terminal Claude Code runs in, else the first installed one (graphical ones need a display)."""
+def detect_terminal(
+    env: Mapping[str, str], which: Callable[[str], str | None] | None = None, system: str | None = None
+) -> str | None:
+    """The terminal Claude Code runs in, else the system's usual one (Linux: the first installed, with a display)."""
     which = which or shutil.which
-    for name, variable in MARKERS:
-        if env.get(variable) and which(TERMINALS[name][0]):
+    system = system or platform.system()
+    for name, variable, value in MARKERS:
+        if env.get(variable) and (value is None or env[variable] == value) and which(TERMINALS[name][0]):
             return name
     if env.get("TERM") == "foot" and which("foot"):
         return "foot"
-    if not (env.get("DISPLAY") or env.get("WAYLAND_DISPLAY")):
+    if system == "Linux" and not (env.get("DISPLAY") or env.get("WAYLAND_DISPLAY")):
         return None
-    return next((name for name in FALLBACK_ORDER if which(TERMINALS[name][0])), None)
+    return next((name for name in FALLBACK_ORDER.get(system, ()) if which(TERMINALS[name][0])), None)
 
 
 def claude_command(branch: str, env: Mapping[str, str], extra: list[str]) -> list[str]:
@@ -115,20 +176,24 @@ def claude_command(branch: str, env: Mapping[str, str], extra: list[str]) -> lis
     return [*command, *extra, FIRST_PROMPT]
 
 
-def terminal_command(terminal: str | list[str], cwd: Path, command: list[str]) -> list[str] | None:
+def relay_env(from_session: str | None) -> dict[str, str]:
+    """What tells the new session's continuity hook that it was opened by a relay."""
+    return {"CTK_RELAY": "1", **({"CTK_RELAY_FROM": from_session} if from_session else {})}
+
+
+def terminal_command(
+    terminal: str | list[str], cwd: Path, command: list[str], env: dict[str, str] | None = None
+) -> list[str] | None:
     """A known terminal's name, or a custom prefix (``{cwd}`` is replaced), followed by ``command``."""
     if isinstance(terminal, list):
         return [str(part).replace("{cwd}", str(cwd)) for part in terminal] + command
     known = TERMINALS.get(terminal)
-    return known[1](str(cwd)) + command if known else None
+    return known[1](str(cwd), command, env or {}) if known else None
 
 
 def child_env(env: Mapping[str, str], from_session: str | None) -> dict[str, str]:
     child = {key: value for key, value in env.items() if key not in SESSION_ENV}
-    child["CTK_RELAY"] = "1"
-    if from_session:
-        child["CTK_RELAY_FROM"] = from_session
-    return child
+    return {**child, **relay_env(from_session)}
 
 
 # --- Lock of the old session ----------------------------------------------------------
@@ -171,8 +236,10 @@ def _git(root: Path, *args: str) -> str:
     return done.stdout.strip() if done.returncode == 0 else ""
 
 
-def _launch(command: list[str], cwd: Path, env: dict[str, str]) -> str | None:
+def _launch(command: list[str], cwd: Path, env: dict[str, str], new_console: bool = False) -> str | None:
     """Start the terminal detached; an error message if it could not start or failed at once."""
+    # Windows: a new console window for `console`; elsewhere a new session, so it outlives this one.
+    flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0) if new_console else 0
     try:
         process = subprocess.Popen(
             command,
@@ -181,7 +248,8 @@ def _launch(command: list[str], cwd: Path, env: dict[str, str]) -> str | None:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            start_new_session=os.name != "nt",
+            creationflags=flags,
         )
     except OSError as error:
         return str(error)
@@ -238,7 +306,7 @@ def run(args) -> int:
         return 1
     extra = config.get("claude-args", [])
     extra = [str(part) for part in extra] if isinstance(extra, list) else []
-    command = terminal_command(terminal, root, claude_command(branch, env, extra))
+    command = terminal_command(terminal, root, claude_command(branch, env, extra), relay_env(session))
     if command is None:
         print(f"relay: unknown terminal {terminal!r}; known: {', '.join(TERMINALS)} (or a list as a custom prefix)")
         return 1
@@ -253,7 +321,7 @@ def run(args) -> int:
     if not confirm("Open the new session?", assume_yes=args.yes or config.get("auto") is True):
         print("relay: cancelled, nothing changed")
         return 1
-    error = _launch(command, root, child_env(env, session))
+    error = _launch(command, root, child_env(env, session), new_console=terminal == "console")
     if error:
         print(f"relay: could not open the new session ({error}). Ask the user to type /clear instead.")
         return 1
