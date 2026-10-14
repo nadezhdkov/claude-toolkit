@@ -58,6 +58,14 @@ def test_sync_copies_support_files_and_removes_stale_ones(tmp_path):
     assert sync.differences(tmp_path) == ["differs two/SKILL.md"]
 
 
+def test_crlf_line_endings_of_a_windows_checkout_are_not_a_difference(tmp_path):
+    skill(tmp_path, "plugin/skills", "one")
+    sync.write(tmp_path)
+    for path in (tmp_path / ".agents").rglob("*.md"):
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    assert sync.differences(tmp_path) == []
+
+
 @pytest.mark.parametrize(("edit", "expected"), [(False, 0), (True, 1)])
 def test_check_command(tmp_path, capsys, edit, expected):
     skill(tmp_path, "plugin/skills", "one")

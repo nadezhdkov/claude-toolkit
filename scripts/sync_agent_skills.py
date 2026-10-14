@@ -53,8 +53,13 @@ def current(root: Path) -> dict[str, bytes]:
     )
 
 
+def _lf(files: dict[str, bytes]) -> dict[str, bytes]:
+    """A Windows checkout may turn line feeds into CRLF; that is not a difference."""
+    return {name: data.replace(b"\r\n", b"\n") for name, data in files.items()}
+
+
 def differences(root: Path) -> list[str]:
-    want, have = expected(root), current(root)
+    want, have = _lf(expected(root)), _lf(current(root))
     return (
         [f"missing {name}" for name in want if name not in have]
         + [f"stale {name}" for name in have if name not in want]
