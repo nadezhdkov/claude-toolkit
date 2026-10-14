@@ -14,6 +14,7 @@ uv run ruff check . && uv run ruff format --check .   # lint + format (CI runs b
 uv run pytest                                         # tests (CI: Python 3.11-3.13)
 shellcheck install.sh                                 # or: uvx --from shellcheck-py shellcheck install.sh
 uv run ctk <command>                                  # run the CLI from the checkout
+make ci                                               # all of the above (`make` lists the targets)
 ```
 
 ## Rules that must not regress
@@ -48,7 +49,7 @@ uv run ctk <command>                                  # run the CLI from the che
 - One module per command in `src/claude_toolkit/`; wire it in `cli.py`.
 - Documentation in English. New docs go in `docs/` (commands in
   `docs/commands/`); only standard files (`README.md`, `AGENTS.md`,
-  `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`) live at the root.
+  `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`, `Makefile`) live at the root.
 - Every behavioural change adds an entry under `## [Unreleased]` in
   `docs/CHANGELOG.md` in the same pull request. Semantic Versioning; keep
   `version` in `pyproject.toml` and `__version__` in `src/claude_toolkit/__init__.py` equal.
