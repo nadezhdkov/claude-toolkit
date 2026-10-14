@@ -1,0 +1,42 @@
+name: Release
+
+# When the version in the files has no tag yet (a merged release pull request), tag
+# the commit and publish the GitHub release with the changelog section as its notes.
+# Opening the release pull request is `make release` or release-pr.yml.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Tag and publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Version files agree
+        run: python3 scripts/release.py check
+      - name: Tag and publish a version that has no tag yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          version=$(python3 scripts/release.py version)
+          if git rev-parse --verify --quiet "refs/tags/v$version" >/dev/null; then
+            echo "v$version already exists; nothing to publish."
+            exit 0
+          fi
+          python3 scripts/release.py notes "$version" > "$RUNNER_TEMP/notes.md"
+          gh release create "v$version" --target "$SHA" --title "v$version" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "Published v$version."

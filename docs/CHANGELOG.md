@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Release automation ([docs/releasing.md](releasing.md)): `scripts/release.py` picks the next
+  version from the Conventional Commits since the last tag, writes it into
+  `pyproject.toml`, `__init__.py`, `uv.lock` and the plugin manifest, and cuts the
+  changelog. `make version` shows it, `make release` opens the release pull request, and the
+  `Release` workflow tags and publishes the GitHub release when that pull request is merged.
+  An optional `Release PR` workflow does the first step on its own when a `RELEASE_TOKEN` secret exists.
 - `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal, else
   a new PowerShell console); the `notify` hook on Windows (a toast, with the
   text passed through the environment); `ctk doctor --toolkit` install hints

@@ -1,0 +1,68 @@
+name: Release PR
+
+# Keeps a release pull request up to date: the next version from the Conventional
+# Commits since the last tag, the version files and the changelog. The repository does not let
+# GITHUB_TOKEN open pull requests (and checks would not run on one), so this needs a token of a
+# maintainer in the RELEASE_TOKEN secret (contents and pull requests: write). Without it the job
+# only says so; `make release` does the same by hand.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    name: Propose the next release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: A token is configured
+        id: token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::notice::No RELEASE_TOKEN secret: run \`make release\` to open the release pull request."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.token.outputs.enabled == 'true'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        if: steps.token.outputs.enabled == 'true'
+      - name: Open or update the release pull request
+        if: steps.token.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if ! version=$(python3 scripts/release.py next 2>"$RUNNER_TEMP/why"); then
+            echo "Nothing to release: $(cat "$RUNNER_TEMP/why")"
+            exit 0
+          fi
+          python3 scripts/release.py status > "$RUNNER_TEMP/status"
+          git switch -C release/next
+          uv run python scripts/release.py prepare --version "$version"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -am "chore: release $version"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPOSITORY}.git" release/next
+          body="Release $version, from the commits below. Merging this tags v$version and publishes the GitHub release.
+
+          $(sed 1,2d "$RUNNER_TEMP/status")"
+          if [ -n "$(gh pr list --head release/next --state open --json number --jq '.[0].number')" ]; then
+            gh pr edit release/next --title "chore: release $version" --body "$body"
+          else
+            gh pr create --head release/next --base main --title "chore: release $version" --body "$body"
+          fi

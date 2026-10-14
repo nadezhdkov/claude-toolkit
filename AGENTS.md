@@ -51,8 +51,10 @@ make ci                                               # all of the above (`make`
   `docs/commands/`); only standard files (`README.md`, `AGENTS.md`,
   `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`, `Makefile`) live at the root.
 - Every behavioural change adds an entry under `## [Unreleased]` in
-  `docs/CHANGELOG.md` in the same pull request. Semantic Versioning; keep
-  `version` in `pyproject.toml` and `__version__` in `src/claude_toolkit/__init__.py` equal.
+  `docs/CHANGELOG.md` in the same pull request. Semantic Versioning, computed
+  from the Conventional Commit titles: never edit a version by hand. `make release`
+  writes it into every file and cuts the changelog ([docs/releasing.md](docs/releasing.md));
+  merging that pull request tags and publishes the release.
 - Commit messages and PR titles follow Conventional Commits.
 - GitHub Actions: pin actions by commit SHA, set permissions per job, never
   check out PR code in `pull_request_target`; audit with
