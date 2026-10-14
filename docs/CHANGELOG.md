@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk completion bash|zsh|fish|powershell`: prints a tab completion script generated from the
+  command line parser, so commands, `shoot` kinds, options and fixed choices (`verify`, `hook`,
+  `libdocs --ecosystem`) are completed without a list to maintain. Nothing is written to your shell
+  configuration. Tested by running bash, fish and PowerShell for real.
 - PyPI packaging: complete metadata (classifiers, URLs, license file), a README whose relative
   links and images become absolute on the PyPI page, and a source distribution limited to the package
   and its tests. `CI / Package` builds both files, runs `twine check --strict` and smoke-tests the
