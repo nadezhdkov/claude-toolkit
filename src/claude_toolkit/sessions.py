@@ -305,6 +305,7 @@ class Summary:
     repeated_reads: int
     repeated_reads_per_session: float
     median_window_growth: float | None  # tokens the window grows per model call
+    median_bash_reread_tokens: float | None  # per session: shell output tokens read again by later calls
     relay_threshold: int | None
     relay_saving: float
     relay_restart_window: int
@@ -377,6 +378,9 @@ def summarise(sessions: list[Session]) -> Summary:
         repeated_reads=repeated,
         repeated_reads_per_session=round(repeated / len(main), 2) if main else 0.0,
         median_window_growth=round(statistics.median(growth), 1) if growth else None,
+        median_bash_reread_tokens=statistics.median(s.carried_chars_by_tool["Bash"] / 4 for s in main)
+        if main
+        else None,
         relay_threshold=relay.threshold,
         relay_saving=relay.saving,
         relay_restart_window=relay.restart_window,
@@ -613,3 +617,130 @@ def weekly_csv(sessions: list[Session]) -> str:
         row = {key: value for key, value in asdict(summary).items() if key in fields}
         writer.writerow({"week": week, **row})
     return out.getvalue()
+
+
+# --- Comparing two periods ---------------------------------------------------------------------
+#
+# Phase 8 is done when, over a week of real use, the median peak window and the Bash re-read cost
+# have both fallen by at least half. `--compare` states that as a verdict instead of two reports
+# read side by side.
+
+TARGET_DROP = 0.5
+MIN_SESSIONS = 5  # fewer sessions in a period say nothing about a median
+
+
+@dataclass
+class Metric:
+    name: str
+    baseline: float | None
+    current: float | None
+    change: float | None  # (current - baseline) / baseline
+    required: bool  # part of the Phase 8 criterion
+    met: bool | None  # fell by at least TARGET_DROP; None when it is only informative or has no data
+
+
+@dataclass
+class Comparison:
+    baseline: str
+    current: str
+    baseline_sessions: int
+    current_sessions: int
+    metrics: list[Metric]
+    verdict: str  # pass | fail | insufficient
+
+
+def _bound(text: str, now: float, end: bool) -> float:
+    """``Nd`` is N days ago; ``YYYY-MM-DD`` is that day in UTC (its end, for the end of a period)."""
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)d", text)
+    if match:
+        return now - float(match.group(1)) * 86400
+    try:
+        day = datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError:
+        raise ValueError(f"not a date or a number of days ago: {text!r} (use 2026-10-13 or 7d)") from None
+    return day.timestamp() + (86400 if end else 0)
+
+
+def parse_period(text: str, now: float | None = None) -> tuple[float, float]:
+    """``START..END`` as two epoch times; both ends are dates (END inclusive) or ``Nd`` days ago."""
+    now = time.time() if now is None else now
+    start, sep, end = text.partition("..")
+    if not sep:
+        raise ValueError(f"not a period: {text!r} (use START..END, for example 2026-10-06..2026-10-13 or 14d..7d)")
+    low, high = _bound(start, now, end=False), _bound(end, now, end=True)
+    if low >= high:
+        raise ValueError(f"the period {text!r} ends before it starts")
+    return low, high
+
+
+def in_period(sessions: list[Session], period: tuple[float, float]) -> list[Session]:
+    """Sessions that ended in the period (a subagent follows its own timestamps)."""
+    return [s for s in sessions if s.end is not None and period[0] <= s.end < period[1]]
+
+
+def _metric(name: str, base: float | None, cur: float | None, required: bool) -> Metric:
+    change = (cur - base) / base if base and cur is not None else None
+    met = change is not None and change <= -TARGET_DROP if required else None
+    return Metric(name, base, cur, change, required, met)
+
+
+def compare(baseline: Summary, current: Summary, labels: tuple[str, str] = ("baseline", "current")) -> Comparison:
+    metrics = [
+        _metric("median peak window (tokens)", baseline.median_peak_context, current.median_peak_context, True),
+        _metric(
+            "Bash re-read per session (tokens, median)",
+            baseline.median_bash_reread_tokens,
+            current.median_bash_reread_tokens,
+            True,
+        ),
+        _metric(
+            "context read per session (tokens)",
+            baseline.context_tokens_per_session,
+            current.context_tokens_per_session,
+            False,
+        ),
+        _metric(
+            "compactions per session",
+            baseline.compactions / baseline.sessions if baseline.sessions else None,
+            current.compactions / current.sessions if current.sessions else None,
+            False,
+        ),
+    ]
+    required = [m for m in metrics if m.required]
+    if min(baseline.sessions, current.sessions) < MIN_SESSIONS or any(m.change is None for m in required):
+        verdict = "insufficient"
+    else:
+        verdict = "pass" if all(m.met for m in required) else "fail"
+    return Comparison(labels[0], labels[1], baseline.sessions, current.sessions, metrics, verdict)
+
+
+def _number(value: float | None) -> str:
+    return "-" if value is None else f"{value:,.0f}" if abs(value) >= 100 else f"{value:,.2f}"
+
+
+def render_comparison(result: Comparison, style: Style | None = None) -> str:
+    st = style or Style.detect()
+    rows = []
+    for m in result.metrics:
+        change = "-" if m.change is None else f"{m.change:+.0%}"
+        if m.required and m.change is not None:
+            change = st.ok(change) if m.met else st.err(change)
+        mark = "" if not m.required else (" ✓" if m.met else " ✗" if m.met is False else " ?")
+        rows.append((m.name + ("*" if m.required else ""), _number(m.baseline), _number(m.current), change + mark))
+    widths = [max(len(r[i]) for r in [("metric", "baseline", "current", "change"), *rows]) for i in range(3)]
+    lines = [
+        st.header("ctk sessions", f"{result.baseline} → {result.current}"),
+        f"  {'metric'.ljust(widths[0])}  {'baseline'.rjust(widths[1])}  {'current'.rjust(widths[2])}  change",
+        *(f"  {r[0].ljust(widths[0])}  {r[1].rjust(widths[1])}  {r[2].rjust(widths[2])}  {r[3]}" for r in rows),
+        f"  sessions: {result.baseline_sessions} → {result.current_sessions}"
+        f" (* part of the Phase 8 criterion: both must fall by {TARGET_DROP:.0%})",
+    ]
+    verdict = {
+        "pass": st.ok("PASS: both fell by at least half", bold=True),
+        "fail": st.err("FAIL: the criterion is not met", bold=True),
+        "insufficient": st.warn(
+            f"INSUFFICIENT DATA: need at least {MIN_SESSIONS} sessions in each period and data for both metrics",
+            bold=True,
+        ),
+    }[result.verdict]
+    return "\n".join([*lines, verdict, "  benchmark scores: not checked here; run benchmark/run.py and compare"])
