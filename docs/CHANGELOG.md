@@ -26,6 +26,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Windows and macOS: tests run on both in CI. All text files and command
+  output are read and written as UTF-8, `ctk` prints UTF-8 on Windows
+  consoles, paths in output use `/` on every system, a confirmation on
+  Windows no longer waits for input from `NUL`, and the `guard-destructive`
+  hook no longer fails on Windows home paths.
 - The `continuity` hook also runs after `/clear`, on resume and at the start
   of a session opened by `ctk relay`.
 - `ctk relay` docs: Claude Code's folder trust question, and trusting the
