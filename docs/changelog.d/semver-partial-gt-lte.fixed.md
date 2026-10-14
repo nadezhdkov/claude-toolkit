@@ -1,0 +1,1 @@
+- `ctk doctor`: Node pins such as `>1.2` and `<=1.2` (partial versions with `>` or `<=`) are now matched as npm does: `>1.2` means `>=1.3.0` and `<=1.2` means `<1.3.0`.

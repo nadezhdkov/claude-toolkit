@@ -113,7 +113,7 @@ comandos de instalación para tu distribución.
 Ejecuta un comando, guarda la salida completa en un log y muestra solo los
 fallos, el resumen y la ruta del log. La salida corta se muestra sin cambios y
 el código de salida siempre se conserva. Reconoce pytest, vitest/jest, tsc,
-ruff/eslint, cargo, go test y gradle, con un modo genérico para el resto.
+ruff/eslint, cargo, go test, gradle y `node --test`, con un modo genérico para el resto.
 
 <img src="../../assets/screenshots/runq.svg" alt="salida de ctk runq: pruebas fallidas resaltadas con código de salida, tiempo y ruta del log">
 

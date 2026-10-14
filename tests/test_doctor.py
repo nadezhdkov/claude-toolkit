@@ -42,6 +42,12 @@ def test_engines_range_and_package_manager(tmp_path, versions):
     assert levels(doctor.check_project(tmp_path)) == [("ok", "node"), ("ok", "npm")]
 
 
+def test_engines_hyphen_range(tmp_path, versions):
+    versions["node"] = (20, 10, 0)
+    (tmp_path / "package.json").write_text(json.dumps({"engines": {"node": "18 - 20"}}))
+    assert levels(doctor.check_project(tmp_path)) == [("ok", "node")]
+
+
 def test_missing_node_modules_with_lockfile(tmp_path, versions):
     versions["node"] = (24, 0, 0)
     (tmp_path / "package.json").write_text("{}")

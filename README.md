@@ -110,7 +110,7 @@ commands for your distribution.
 Runs a command, saves the full output to a log and prints only failures, the
 summary and the log path. Short output is printed unchanged and the exit code
 is always preserved. Recognises pytest, vitest/jest, tsc, ruff/eslint, cargo,
-go test and gradle, with a generic fallback.
+go test, gradle and `node --test`, with a generic fallback.
 
 <img src="docs/assets/screenshots/runq.svg" alt="ctk runq output: failing tests highlighted with exit code, timing and log path">
 

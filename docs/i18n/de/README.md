@@ -113,7 +113,7 @@ Installationsbefehlen für deine Distribution.
 Führt einen Befehl aus, speichert die vollständige Ausgabe in einem Log und gibt
 nur die Fehlschläge, die Zusammenfassung und den Log-Pfad aus. Kurze Ausgaben
 werden unverändert ausgegeben, und der Exit-Code bleibt immer erhalten. Erkennt
-pytest, vitest/jest, tsc, ruff/eslint, cargo, go test und gradle, mit einem
+pytest, vitest/jest, tsc, ruff/eslint, cargo, go test, gradle und `node --test`, mit einem
 allgemeinen Fallback für alles andere.
 
 <img src="../../assets/screenshots/runq.svg" alt="Ausgabe von ctk runq: fehlgeschlagene Tests hervorgehoben, mit Exit-Code, Dauer und Log-Pfad">
