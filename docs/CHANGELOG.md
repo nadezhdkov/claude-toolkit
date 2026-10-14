@@ -28,6 +28,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 - The `continuity` hook also runs after `/clear`, on resume and at the start
   of a session opened by `ctk relay`.
+- `ctk relay` docs: Claude Code's folder trust question, and trusting the
+  folder that holds your projects so relayed sessions open without it.
 - Roadmap: Phase 7 is closed. `ctk recall` is not built because the
   transcripts show no missing search (5 repeated searches in 1,944, none
   repeated after a compaction); Phase 8 re-checks it.
