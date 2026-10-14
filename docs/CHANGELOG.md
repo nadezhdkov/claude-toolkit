@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk sessions --compare BASELINE CURRENT`: compares two periods (`START..END` as dates or `Nd` days
+  ago) and says whether the Phase 8 criterion is met: the median peak window and the median Bash
+  re-read cost per session both fell by at least half. Exit `0` for a pass, `1` for a fail or too
+  few sessions (at least 5 per period). The summary also reports `median_bash_reread_tokens`.
 - `.agents/skills/`: a copy of the skills (`debug`, `ship`, `handoff`, `onboard-repo`, `visual-qa`,
   `security-pass` and the project's `issue`) in the open `SKILL.md` layout, so agents other than
   Claude Code can use them. `make skills` generates it from `plugin/skills/` and `.claude/skills/`,

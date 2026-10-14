@@ -11,6 +11,8 @@ ctk sessions --no-subagents      # ignore subagent transcripts
 ctk sessions --csv -             # weekly rows as CSV on stdout
 ctk sessions --csv weekly.csv    # ... or into a file
 ctk sessions --json              # the full summary as JSON
+ctk sessions --compare 2026-10-06..2026-10-13 2026-10-20..2026-10-27   # baseline vs current: pass or fail
+ctk sessions --compare 14d..7d 7d..0d                                  # ... or relative to now
 ```
 
 ## Metrics
@@ -52,6 +54,31 @@ reads). Thresholds from 100k to 900k tokens are tried, skipping any below
 twice the fresh window. Among those that save at least 90% of the best saving,
 the highest wins: every relay costs some of the thread, which the model
 cannot price. Under a 5% saving there is no relay point.
+
+## Comparing two periods
+
+`--compare BASELINE CURRENT` gives the Phase 8 verdict instead of two reports to read side by side.
+Each period is `START..END`: two dates (both days included, UTC) or `Nd` for N days ago.
+A session belongs to the period it ended in.
+
+```text
+ctk sessions · 2026-10-06..2026-10-13 → 2026-10-20..2026-10-27
+  metric                                      baseline    current  change
+  median peak window (tokens)*                 505,000    240,000  -52% ✓
+  Bash re-read per session (tokens, median)  5,557,510  2,100,000  -62% ✓
+  context read per session (tokens)        101,826,404 51,000,000  -50%
+  compactions per session                         0.12       0.10  -17%
+  sessions: 16 → 25 (* part of the Phase 8 criterion: both must fall by 50%)
+PASS: both fell by at least half
+```
+
+The two starred metrics are the criterion: **both** must fall by at least half (exactly half
+counts). The others only inform. With fewer than 5 sessions in a period, or no data for a
+metric, the verdict is `INSUFFICIENT DATA`: a median of four sessions says nothing. The
+benchmark scores are not read here; run `benchmark/run.py` and compare them separately.
+
+Exit code `0` for a pass, `1` for a fail or insufficient data, `2` for a period that cannot be
+read. `--json` prints the comparison with every metric.
 
 ## Privacy
 
