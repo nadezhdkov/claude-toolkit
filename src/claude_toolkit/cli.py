@@ -96,7 +96,13 @@ def _lsp(args: argparse.Namespace) -> int:
 def _setup(args: argparse.Namespace) -> int:
     from . import setup
 
-    return setup.run(assume_yes=args.yes, dry_run=args.dry_run, uninstall=args.uninstall)
+    return setup.run(
+        assume_yes=args.yes,
+        dry_run=args.dry_run,
+        uninstall=args.uninstall,
+        agents=args.agents,
+        agents_files=[Path(f).expanduser() for f in args.agents_file or []],
+    )
 
 
 def _shoot(args: argparse.Namespace) -> int:
@@ -257,6 +263,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-y", "--yes", action="store_true", help="answer yes to every confirmation")
     p.add_argument("--dry-run", action="store_true", help="only print the plan")
     p.add_argument("--uninstall", action="store_true", help="remove what setup added")
+    p.add_argument(
+        "--agents",
+        action="store_true",
+        help="offer the skills to agents other than Claude Code (~/.agents/skills) even if none is found",
+    )
+    p.add_argument(
+        "--agents-file",
+        action="append",
+        metavar="FILE",
+        help="add the short ctk section to this global instructions file (repeatable; pass it again to uninstall)",
+    )
     p.set_defaults(func=_setup)
 
     p = sub.add_parser("shoot", help="deterministic screenshots, baseline comparison and contact sheets")

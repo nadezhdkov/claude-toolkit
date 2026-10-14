@@ -23,6 +23,12 @@ commits left out:
 
 The strongest one wins. With none of them there is nothing to release.
 
+## The changelog is written in fragments
+
+A pull request does not edit `docs/CHANGELOG.md`: it adds `docs/changelog.d/<slug>.<category>.md`
+([format](changelog.d/README.md)). With the changelog as one shared file, every pull request wrote at the
+same spot and any two open ones conflicted. `make changelog` previews what the next release will list.
+
 ## What a release changes
 
 `make release` needs `gh` and a checkout at `origin/main`. It adds a worktree
@@ -30,9 +36,10 @@ The strongest one wins. With none of them there is nothing to release.
 
 - the version in `pyproject.toml`, `src/claude_toolkit/__init__.py`, `uv.lock` and
   `plugin/.claude-plugin/plugin.json`;
-- `docs/CHANGELOG.md`: the `[Unreleased]` entries move under `## [X.Y.Z] - date`, a new empty
+- `docs/CHANGELOG.md`: the `[Unreleased]` entries and the fragments (added to the matching `###` section,
+  in file name order, then deleted) move under `## [X.Y.Z] - date`, a new empty
   `[Unreleased]` stays on top and the compare links are updated (a release with an
-  empty `[Unreleased]` is refused: write the entries first, as every pull request must);
+  empty `[Unreleased]` and no fragment is refused: write the entries first, as every pull request must);
 - the overview screenshot, which shows the version;
 - one commit `chore: release X.Y.Z`, pushed on `release/X.Y.Z`, and the pull request.
 

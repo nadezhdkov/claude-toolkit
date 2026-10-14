@@ -4,7 +4,8 @@
     scripts/release.py status            what would be released, and why
     scripts/release.py next              the next version (exit 1 when there is nothing to release)
     scripts/release.py version           the version the files declare now
-    scripts/release.py check             all version files agree (exit 1 otherwise)
+    scripts/release.py check             all version files agree and every changelog fragment is well named
+    scripts/release.py changelog         what [Unreleased] will hold at the next release (entries + fragments)
     scripts/release.py prepare [--version X.Y.Z]   write the version into the files and cut the changelog
     scripts/release.py notes [X.Y.Z]     the changelog section of a version, for the GitHub release
     scripts/release.py pr [--yes]        prepare the release in a new worktree and open the pull request
@@ -44,6 +45,11 @@ FILES = (
     ("plugin/.claude-plugin/plugin.json", rf'("version": ")({VERSION})(")'),
 )
 CHANGELOG = "docs/CHANGELOG.md"
+# A pull request adds docs/changelog.d/<slug>.<category>.md instead of editing CHANGELOG.md, where every
+# pull request would write in the same place and conflict with the others. A release folds them in.
+FRAGMENTS = "docs/changelog.d"
+CATEGORIES = ("added", "changed", "deprecated", "removed", "fixed", "security")
+FRAGMENT = re.compile(rf"^[A-Za-z0-9][\w.-]*\.({'|'.join(CATEGORIES)})\.md$")
 
 
 def declared(root: Path) -> dict[str, str]:
@@ -60,13 +66,45 @@ def declared(root: Path) -> dict[str, str]:
     return found
 
 
+def fragment_files(root: Path) -> list[Path]:
+    folder = root / FRAGMENTS
+    return sorted(p for p in folder.glob("*.md") if p.name != "README.md") if folder.is_dir() else []
+
+
+def entry_text(text: str) -> str:
+    """A fragment as a changelog bullet: text without a leading "- " is turned into one."""
+    lines = text.strip().splitlines()
+    if not lines:
+        return ""
+    if lines[0].startswith("- "):
+        return "\n".join(line.rstrip() for line in lines)
+    return "- " + lines[0].rstrip() + "".join(f"\n  {line}".rstrip() for line in lines[1:])
+
+
+def fragments(root: Path) -> dict[str, list[str]]:
+    """Category -> the entries waiting for the next release, in file name order."""
+    found: dict[str, list[str]] = {}
+    for path in fragment_files(root):
+        match = FRAGMENT.match(path.name)
+        entry = entry_text(path.read_text(encoding="utf-8"))
+        if match and entry:
+            found.setdefault(match.group(1), []).append(entry)
+    return found
+
+
 def check(root: Path) -> list[str]:
-    """Problems: files that disagree with pyproject.toml."""
+    """Problems: files that disagree with pyproject.toml, and fragments that would be ignored."""
     found = declared(root)
     expected = found["pyproject.toml"]
-    return [
+    problems = [
         f"{name} has {version}, pyproject.toml has {expected}" for name, version in found.items() if version != expected
     ]
+    for path in fragment_files(root):
+        if not FRAGMENT.match(path.name):
+            problems.append(f"{FRAGMENTS}/{path.name}: name it <slug>.<{'|'.join(CATEGORIES)}>.md")
+        elif not path.read_text(encoding="utf-8").strip():
+            problems.append(f"{FRAGMENTS}/{path.name} is empty")
+    return problems
 
 
 # --- Versions from commits --------------------------------------------------------------------
@@ -134,7 +172,15 @@ def plan(root: Path) -> dict:
     problems = check(root)
     current = declared(root)["pyproject.toml"]
     tag = last_tag(root)
-    result = {"current": current, "last_tag": tag, "next": None, "level": None, "commits": [], "why": ""}
+    result = {
+        "current": current,
+        "last_tag": tag,
+        "next": None,
+        "level": None,
+        "commits": [],
+        "why": "",
+        "fragments": len(fragment_files(root)),
+    }
     if problems:
         result["why"] = "version files disagree: " + "; ".join(problems)
     elif tag is None or parse_version(current) > parse_version(tag[1:]):
@@ -152,14 +198,46 @@ def plan(root: Path) -> dict:
 # --- Changelog ---------------------------------------------------------------------------------
 
 
-def cut_changelog(text: str, version: str, date: str) -> str:
-    """Move the [Unreleased] entries under a new version heading and fix the compare links."""
+def merge_fragments(body: str, new: dict[str, list[str]]) -> str:
+    """Add the fragments to the ### sections of ``body`` (creating the missing ones, in the usual order)."""
+    parts = re.split(r"(?m)^### (.+)$", body)
+    preamble, sections = parts[0].strip(), list(zip(parts[1::2], parts[2::2], strict=True))
+    titles = {title.strip().lower(): index for index, (title, _) in enumerate(sections)}
+    contents = [[title.strip(), content.strip()] for title, content in sections]
+    for category in CATEGORIES:
+        if category not in new:
+            continue
+        entries = "\n".join(new[category])
+        if category in titles:
+            contents[titles[category]][1] = (contents[titles[category]][1] + "\n" + entries).strip()
+        else:
+            contents.append([category.capitalize(), entries])
+    rank = {category.capitalize(): index for index, category in enumerate(CATEGORIES)}
+    contents.sort(key=lambda item: rank.get(item[0], len(rank)))  # stable: unknown headings keep their order, last
+    blocks = ([preamble] if preamble else []) + [f"### {title}\n\n{content}" for title, content in contents]
+    return "\n\n".join(blocks)
+
+
+def unreleased(root: Path) -> str:
+    """What the next release will list: the entries written in [Unreleased] plus the fragments."""
+    text = (root / CHANGELOG).read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^## \[Unreleased\]\n(.*?)(?=^## \[|\Z)", text)
+    body = re.split(r"(?m)^\[Unreleased\]: ", match.group(1))[0].strip() if match else ""
+    return merge_fragments(body, fragments(root)) if fragments(root) else body
+
+
+def cut_changelog(text: str, version: str, date: str, new: dict[str, list[str]] | None = None) -> str:
+    """Move the [Unreleased] entries (and the fragments) under a new version heading; fix the compare links."""
     match = re.search(r"(?ms)^## \[Unreleased\]\n(.*?)(?=^## \[|\Z)", text)
     if not match:
         raise ReleaseError(f"{CHANGELOG}: no [Unreleased] section")
     body = re.split(r"(?m)^\[Unreleased\]: ", match.group(1))[0].strip()
+    if new:
+        body = merge_fragments(body, new)
     if not body:
-        raise ReleaseError(f"{CHANGELOG}: [Unreleased] is empty; add the entries of this release first")
+        raise ReleaseError(
+            f"{CHANGELOG}: [Unreleased] is empty; add the entries of this release first ({FRAGMENTS}/<slug>.added.md)"
+        )
     text = text[: match.start()] + f"## [Unreleased]\n\n## [{version}] - {date}\n\n{body}\n\n" + text[match.end() :]
     link = re.search(rf"(?m)^\[Unreleased\]: (\S+)/compare/v({VERSION})\.\.\.HEAD$", text)
     if not link:
@@ -188,13 +266,20 @@ def prepare(root: Path, version: str, date: str) -> list[str]:
     if parse_version(version) <= parse_version(current):
         raise ReleaseError(f"{version} is not newer than {current}")
     # Compute every new text first: a release that fails half way must leave nothing changed.
-    writes = {CHANGELOG: cut_changelog((root / CHANGELOG).read_text(encoding="utf-8"), version, date)}
+    writes = {CHANGELOG: cut_changelog((root / CHANGELOG).read_text(encoding="utf-8"), version, date, fragments(root))}
     for name, pattern in FILES:
         text = (root / name).read_text(encoding="utf-8")
         writes[name] = re.sub(pattern, rf"\g<1>{version}\g<3>", text, count=1)
     for name, text in writes.items():
         (root / name).write_text(text, encoding="utf-8")
-    return [name for name, _ in FILES] + [CHANGELOG]
+    folded = fragment_files(root)
+    for path in folded:
+        path.unlink()
+    return (
+        [name for name, _ in FILES]
+        + [CHANGELOG]
+        + ([f"{len(folded)} changelog fragment(s) folded in"] if folded else [])
+    )
 
 
 def refresh_overview(root: Path) -> None:
@@ -264,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     status = sub.add_parser("status")
     status.add_argument("--json", action="store_true")
-    for name in ("next", "version", "check"):
+    for name in ("next", "version", "check", "changelog"):
         sub.add_parser(name)
     p = sub.add_parser("prepare")
     p.add_argument("--version")
@@ -288,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
                     print("\n".join(f"  {subject}" for subject in result["commits"]))
                 else:
                     print(f"next    none: {result['why']}")
+                print(f"changelog fragments waiting: {result['fragments']}")
             return 0
         if args.command == "next":
             result = plan(root)
@@ -296,6 +382,9 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(result["why"], file=sys.stderr)
             return 0 if result["next"] else 1
+        if args.command == "changelog":
+            print(unreleased(root) or "(nothing yet)")
+            return 0
         if args.command == "version":
             print(declared(root)["pyproject.toml"])
             return 0

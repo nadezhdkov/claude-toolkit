@@ -194,3 +194,81 @@ def test_this_repository_keeps_its_version_files_in_step():
     assert release.check(ROOT) == [], "run `make release`; do not edit versions by hand"
     versions = set(release.declared(ROOT).values())
     assert len(versions) == 1
+
+
+# --- changelog fragments ---------------------------------------------------------------------------
+
+
+def fragment(repo, name, text):
+    path = repo / "docs" / "changelog.d" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_fragments_are_folded_into_the_sections_in_order_and_removed(repo):
+    readme = fragment(repo, "README.md", "How this folder works.")
+    fragment(repo, "relay.added.md", "- the relay thing")
+    fragment(repo, "early.added.md", "a plain sentence\nsecond line of it")
+    fragment(repo, "later.fixed.md", "- a fix")
+    fragment(repo, "audit.security.md", "- a security note")
+    fragment(repo, "tweak.changed.md", "- a change")
+    changed = release.prepare(repo, "0.4.0", "2026-10-14")
+    assert changed[-1] == "5 changelog fragment(s) folded in"
+    text = (repo / "docs/CHANGELOG.md").read_text(encoding="utf-8")
+    section = text[text.index("## [0.4.0]") : text.index("## [0.3.0]")]
+    assert (
+        section.index("### Added")
+        < section.index("### Changed")
+        < section.index("### Fixed")
+        < section.index("### Security")
+    )
+    assert "- a new thing\n- a plain sentence\n  second line of it\n- the relay thing\n" in section, (
+        "old entry, then by file name"
+    )
+    assert "### Fixed\n\n- a fix\n" in section
+    assert not list((repo / "docs/changelog.d").glob("*.*.md")) and readme.exists(), "folded files go, the README stays"
+    assert release.notes(repo, "0.4.0") == section.split("\n", 2)[2].strip() + "\n"
+
+
+def test_a_release_can_be_made_of_fragments_alone(repo):
+    (repo / "docs/CHANGELOG.md").write_text(CHANGELOG.replace("### Added\n\n- a new thing\n\n", ""), encoding="utf-8")
+    fragment(repo, "only.added.md", "- the only entry")
+    release.prepare(repo, "0.4.0", "2026-10-14")
+    assert "## [0.4.0] - 2026-10-14\n\n### Added\n\n- the only entry\n\n## [0.3.0]" in (
+        repo / "docs/CHANGELOG.md"
+    ).read_text(encoding="utf-8")
+    with pytest.raises(release.ReleaseError, match="empty"):
+        (repo / "docs/CHANGELOG.md").write_text(
+            CHANGELOG.replace("### Added\n\n- a new thing\n\n", ""), encoding="utf-8"
+        )
+        release.prepare(repo, "0.5.0", "2026-10-15")
+
+
+def test_the_preview_shows_what_the_next_release_will_hold(repo, capsys):
+    assert release.unreleased(repo) == "### Added\n\n- a new thing"
+    fragment(repo, "x.fixed.md", "- fixed x")
+    assert release.main(["--root", str(repo), "changelog"]) == 0
+    assert capsys.readouterr().out == "### Added\n\n- a new thing\n\n### Fixed\n\n- fixed x\n"
+    assert release.plan(repo)["fragments"] == 1
+
+
+def test_a_misnamed_or_empty_fragment_is_reported_not_silently_dropped(repo):
+    fragment(repo, "README.md", "ignored")
+    fragment(repo, "good.added.md", "- ok")
+    fragment(repo, "no-category.md", "- lost")
+    fragment(repo, "wrong.improved.md", "- lost")
+    fragment(repo, "blank.fixed.md", "  \n")
+    problems = release.check(repo)
+    assert any("no-category.md" in p for p in problems) and any("wrong.improved.md" in p for p in problems)
+    assert any("blank.fixed.md is empty" in p for p in problems) and not any(
+        "good.added" in p or "README" in p for p in problems
+    )
+    assert release.main(["--root", str(repo), "check"]) == 1
+
+
+def test_the_pull_request_check_accepts_a_fragment():
+    workflow = (ROOT / ".github" / "workflows" / "pr-checks.yml").read_text(encoding="utf-8")
+    assert "docs/changelog.d/" in workflow and "docs/CHANGELOG.md" in workflow
+    for category in release.CATEGORIES:
+        assert category in workflow
