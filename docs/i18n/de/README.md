@@ -92,6 +92,7 @@ Führe `ctk` allein aus, um eine Übersicht zu erhalten:
 | [`ctk verify`](../../commands/verify.md) | Was für den Code in seinem jetzigen Zustand verifiziert ist: jeder `runq`-Lauf pro Code-Zustand erfasst; aktuell, fehlgeschlagen, veraltet oder nie ausgeführt |
 | [`ctk diffcheck`](../../commands/diffcheck.md) | Deterministische Prüfungen einer Änderung: entfernte API, die noch verwendet wird, riskante Dateien, Debug-Reste, Code ohne Tests |
 | [`ctk relay`](../../commands/relay.md) | Übergibt die Arbeit in einem neuen Terminal an eine frische Claude-Code-Sitzung, ausgehend von der Handoff-Datei und dem verifizierten Zustand |
+| [`ctk completion`](../../commands/completion.md) | Tab-Vervollständigung für bash, zsh, fish und PowerShell, aus den Befehlen selbst erzeugt |
 | [`ctk setup`](installation.md) | Bindet das Toolkit in Claude Code ein und fragt vor jeder Änderung |
 | [`ctk hook`](../../commands/hooks.md) | Die Logik hinter den Plugin-Hooks (Ereignis-JSON auf der Standardeingabe) |
 

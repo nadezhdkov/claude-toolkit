@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk completion bash|zsh|fish|powershell`: prints a tab completion script generated from the
+  command line parser, so commands, `shoot` kinds, options and fixed choices (`verify`, `hook`,
+  `libdocs --ecosystem`) are completed without a list to maintain. Nothing is written to your shell
+  configuration. Tested by running bash, fish and PowerShell for real.
 - `ctk sessions --compare BASELINE CURRENT`: compares two periods (`START..END` as dates or `Nd` days
   ago) and says whether the Phase 8 criterion is met: the median peak window and the median Bash
   re-read cost per session both fell by at least half. Exit `0` for a pass, `1` for a fail or too
