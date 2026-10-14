@@ -73,7 +73,7 @@ def _pytest_command(project: Path) -> list[str] | None:
         return [str(python), "-m", "pytest"]
     pyproject = project / "pyproject.toml"
     uses_uv = (project / "uv.lock").exists() and shutil.which("uv") and pyproject.exists()
-    if uses_uv and "pytest" in pyproject.read_text(errors="replace"):
+    if uses_uv and "pytest" in pyproject.read_text(errors="replace", encoding="utf-8"):
         return ["uv", "run", "--frozen", "pytest"]
     return None
 
@@ -109,7 +109,7 @@ def _python_plans(files: list[Path], root: Path) -> list[Plan]:
         command = _pytest_command(project)
         tests = python_tests(edited, project) if command else []
         if command and tests:
-            relative = [str(test.relative_to(project)) for test in tests]
+            relative = [test.relative_to(project).as_posix() for test in tests]
             plans.append(Plan("pytest", [*command, "-q", *relative], project, {0, 5}))
     return plans
 
@@ -126,7 +126,7 @@ def _js_plans(files: list[Path], root: Path) -> list[Plan]:
                 by_project.setdefault(project, []).append(file)
     plans = []
     for project, edited in by_project.items():
-        relative = [str(file.relative_to(project)) for file in edited]
+        relative = [file.relative_to(project).as_posix() for file in edited]
         bins = [directory / "node_modules" / ".bin" for directory in (project, *project.parents)]
         vitest = next((b / "vitest" for b in bins if (b / "vitest").exists()), None)
         jest = next((b / "jest" for b in bins if (b / "jest").exists()), None)

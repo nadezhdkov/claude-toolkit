@@ -72,7 +72,7 @@ def contract_for(agent_type: str) -> Contract | None:
     for directory in agents_dirs():
         path = directory / f"{name}.md"
         if path.is_file():
-            return parse_contract(path.read_text())
+            return parse_contract(path.read_text(encoding="utf-8"))
     return None
 
 

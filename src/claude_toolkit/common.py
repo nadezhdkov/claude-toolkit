@@ -35,7 +35,10 @@ def confirm(question: str, *, assume_yes: bool) -> bool:
     prompt = (
         f"{st.accent('?', bold=True)} {st.bold(question)} {st.muted('[y/N]')} " if st.enabled else f"{question} [y/N] "
     )
-    answer = input(prompt).strip().lower()
+    try:
+        answer = input(prompt).strip().lower()
+    except EOFError:  # Windows reports NUL as a terminal; reading it ends at once
+        raise ConfirmationRequired(question) from None
     return answer in ("y", "yes", "s", "sim")
 
 
@@ -46,7 +49,9 @@ def which(name: str) -> str | None:
 def run_text(args: list[str], timeout: float = 10.0) -> str | None:
     """Run a short command and return its combined output, or None if it cannot run."""
     try:
-        done = subprocess.run(args, capture_output=True, text=True, timeout=timeout, check=False)
+        done = subprocess.run(
+            args, capture_output=True, text=True, timeout=timeout, check=False, encoding="utf-8", errors="replace"
+        )
     except (OSError, subprocess.TimeoutExpired):
         return None
     return (done.stdout + done.stderr).strip()
@@ -71,7 +76,7 @@ def detect_host() -> Host:
     ids: set[str] = set()
     release = Path("/etc/os-release")
     if release.exists():
-        for line in release.read_text(errors="replace").splitlines():
+        for line in release.read_text(encoding="utf-8", errors="replace").splitlines():
             key, _, value = line.partition("=")
             if key in ("ID", "ID_LIKE"):
                 ids.update(value.strip().strip('"').lower().split())

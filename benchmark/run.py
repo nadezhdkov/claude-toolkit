@@ -134,7 +134,7 @@ class Case:
 
 
 def load_case(path: Path) -> Case:
-    meta, prompt = parse_frontmatter((path / "prompt.md").read_text())
+    meta, prompt = parse_frontmatter((path / "prompt.md").read_text(encoding="utf-8"))
     case = Case(
         name=str(meta.get("name") or path.name),
         path=path,
@@ -146,7 +146,7 @@ def load_case(path: Path) -> Case:
     setup = path / "setup.sh"
     case.setup = setup if setup.exists() else None
     for file in sorted((path / "graders").glob("*.md")):
-        options, body = parse_frontmatter(file.read_text())
+        options, body = parse_frontmatter(file.read_text(encoding="utf-8"))
         kind = str(options.pop("type", ""))
         weight = float(options.pop("weight", 1))
         arm = str(options.pop("arm", ""))
@@ -280,7 +280,15 @@ def score(results: list[dict], graders: list[Grader], two_arms: bool) -> float:
 
 def docker(*args: str, input_text: str | None = None, timeout: float = 120, env=None) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["docker", *args], input=input_text, capture_output=True, text=True, timeout=timeout, check=False, env=env
+        ["docker", *args],
+        input=input_text,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+        env=env,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -295,7 +303,9 @@ def image_tag() -> str:
 
 
 def claude_version() -> str:
-    done = subprocess.run(["claude", "--version"], capture_output=True, text=True, check=False)
+    done = subprocess.run(
+        ["claude", "--version"], capture_output=True, text=True, check=False, encoding="utf-8", errors="replace"
+    )
     match = re.search(r"\d+\.\d+\.\d+", done.stdout)
     return match.group(0) if match else "stable"
 
@@ -317,7 +327,7 @@ def load_credentials() -> dict[str, str]:
     found = {}
     env_file = HERE / ".env"
     if env_file.exists():
-        for line in env_file.read_text().splitlines():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
             name, sep, value = line.strip().partition("=")
             if sep and name in CREDENTIALS and value.strip():
                 found[name] = value.strip().strip("\"'")
@@ -415,7 +425,7 @@ def run_once(case: Case, arm: str, index: int, args, tag: str, credentials: dict
         docker("rm", "-f", name)
     path = out_dir / case.name / f"{arm}-{index}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(raw)
+    path.write_text(raw, encoding="utf-8")
     two_arms = len(args.arms) == 2
     return RunResult(
         case=case.name, arm=arm, index=index, score=score(verdicts, case.graders, two_arms), graders=verdicts,
@@ -528,8 +538,8 @@ def main(argv: list[str] | None = None) -> int:
         {"image": tag, "model": args.model, "arms": args.arms, "partial": stopped, "summary": rows,
          "runs": [asdict(r) for r in results]},
         indent=2,
-    ))  # fmt: skip
-    (out_dir / "summary.txt").write_text(table + "\n")
+    ), encoding="utf-8")  # fmt: skip
+    (out_dir / "summary.txt").write_text(table + "\n", encoding="utf-8")
     print(table)
     if stopped:
         print(f"partial results: {stopped}", file=sys.stderr)

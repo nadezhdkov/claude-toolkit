@@ -109,7 +109,7 @@ def probe(path: Path) -> tuple[float, int, int, str]:
         done = subprocess.run(
             ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
              "stream=codec_name,sample_rate,channels:format=duration", "-of", "json", str(path)],
-            capture_output=True, text=True, timeout=60, check=False,
+            capture_output=True, text=True, timeout=60, check=False, encoding="utf-8", errors="replace",
         )  # fmt: skip
     except FileNotFoundError as missing:
         raise AudioError("ffprobe is not installed (it ships with ffmpeg)") from missing

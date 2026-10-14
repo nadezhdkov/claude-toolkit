@@ -114,3 +114,22 @@ Done when, over a week of real use, the median peak window and the Bash
 re-read cost have both fallen by at least half, and the benchmark scores have
 not dropped. The same week re-checks whether search is missing (the
 `ctk recall` question closed in Phase 7).
+
+## 🚧 Phase 9 — Windows and macOS
+
+Today the toolkit is built and tested on Linux; macOS is mostly untested and
+Windows is not supported. Claude Code runs on both, so `ctk` should too, with
+the CI as the proof since the maintainer works on Linux.
+
+- ✅ Tests run on macOS and Windows in CI; text I/O is UTF-8 everywhere
+  (Windows defaults to its legacy code page), paths in output use `/`, and
+  confirmation never hangs on Windows' `NUL`.
+- ⏳ Windows install: `install.ps1`, the plugin launcher, and hooks under Git
+  Bash (Claude Code runs hooks there; without Git Bash it has no Bash tool,
+  which the plugin's workflow needs).
+- ⏳ `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal,
+  PowerShell); `notify` on Windows; `doctor` install hints for winget.
+- ⏳ Clear messages where there is no equivalent: `sandbox` (bubblewrap) and
+  `shoot desktop` (Xvfb) stay Linux-only.
+
+Done when CI passes on all three systems and `install` works on each.

@@ -176,7 +176,7 @@ def configured_checks(root: Path) -> list[str] | None:
     if not path.exists():
         return None
     try:
-        table = tomllib.loads(path.read_text()).get("verify", {})
+        table = tomllib.loads(path.read_text(encoding="utf-8")).get("verify", {})
     except (OSError, tomllib.TOMLDecodeError) as error:
         print(f"verify: ignoring {path.name}: {error}", file=sys.stderr)
         return None
@@ -196,7 +196,7 @@ def detected_checks(root: Path) -> list[str]:
     checks: list[str] = []
     pyproject = root / "pyproject.toml"
     if pyproject.exists():
-        text = pyproject.read_text(errors="replace")
+        text = pyproject.read_text(errors="replace", encoding="utf-8")
         runner = _python_runner(root)
         if runner and ("pytest" in text or (root / "tests").is_dir()):
             checks.append(shlex.join([*runner, "pytest", "-q"]))
@@ -205,7 +205,7 @@ def detected_checks(root: Path) -> list[str]:
     package = root / "package.json"
     if package.exists():
         try:
-            scripts = json.loads(package.read_text()).get("scripts") or {}
+            scripts = json.loads(package.read_text(encoding="utf-8")).get("scripts") or {}
         except json.JSONDecodeError:
             scripts = {}
         manager = "pnpm" if (root / "pnpm-lock.yaml").exists() else "yarn" if (root / "yarn.lock").exists() else "npm"

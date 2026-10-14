@@ -6,6 +6,7 @@ import subprocess
 import zlib
 
 import pytest
+from conftest import posix_only
 
 from claude_toolkit import cli, png, shoot
 from claude_toolkit.common import EXIT_NEEDS_CONFIRMATION
@@ -206,6 +207,7 @@ echo "SCRIPT ERROR: Invalid call" >&2
 """
 
 
+@posix_only
 def test_godot_uses_override_for_size_and_keeps_the_last_frame(tmp_path, monkeypatch):
     project = tmp_path / "game"
     project.mkdir()

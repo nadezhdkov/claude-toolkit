@@ -167,7 +167,7 @@ def test_rust_from_lock_and_registry(tmp_path, monkeypatch, capsys):
     assert cli.main(["libdocs", "serde", str(project)]) == 0
     out = capsys.readouterr().out
     assert "libdocs: serde 1.0.210 (rust)" in out and 'declared: serde = { version = "1"' in out
-    assert "pub trait Serialize" in out and "private" not in out
+    assert "pub trait Serialize" in out and "fn private" not in out
     assert cli.main(["libdocs", "serde", str(project), "--find", "Serialize"]) == 0
     assert "fn serialize(&self);" in capsys.readouterr().out
 

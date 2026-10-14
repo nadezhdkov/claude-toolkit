@@ -41,24 +41,26 @@ def demo_home(base: Path) -> Path:
     home = base / "home"
     app = home / "projects" / "shop-api"
     (app / "tests").mkdir(parents=True)
-    (app / ".nvmrc").write_text("22.12.0\n")
-    (app / "package.json").write_text(json.dumps({"engines": {"node": "^22.12"}, "packageManager": "npm@10.9.0"}))
-    (app / "package-lock.json").write_text("{}")
-    (app / "tests" / "test_api.py").write_text(TEST_FILE)
-    (app / "pytest.ini").write_text("[pytest]\naddopts = -p no:cacheprovider\n")
+    (app / ".nvmrc").write_text("22.12.0\n", encoding="utf-8")
+    (app / "package.json").write_text(
+        json.dumps({"engines": {"node": "^22.12"}, "packageManager": "npm@10.9.0"}), encoding="utf-8"
+    )
+    (app / "package-lock.json").write_text("{}", encoding="utf-8")
+    (app / "tests" / "test_api.py").write_text(TEST_FILE, encoding="utf-8")
+    (app / "pytest.ini").write_text("[pytest]\naddopts = -p no:cacheprovider\n", encoding="utf-8")
     for name in ("server.ts", "routes.ts", "db.ts", "auth.ts"):
         (app / "src" / name).parent.mkdir(exist_ok=True)
-        (app / "src" / name).write_text("")
+        (app / "src" / name).write_text("", encoding="utf-8")
     for name in ("app.py", "jobs.py", "models.py"):
         (app / "workers" / name).parent.mkdir(exist_ok=True)
-        (app / "workers" / name).write_text("")
+        (app / "workers" / name).write_text("", encoding="utf-8")
     for name in ("main.rs", "lib.rs", "codec.rs"):
         (app / "native" / name).parent.mkdir(exist_ok=True)
-        (app / "native" / name).write_text("")
+        (app / "native" / name).write_text("", encoding="utf-8")
     plugins = home / ".claude" / "plugins"
     plugins.mkdir(parents=True)
     (plugins / "installed_plugins.json").write_text(
-        json.dumps({"plugins": {"rust-analyzer-lsp@claude-plugins-official": []}})
+        json.dumps({"plugins": {"rust-analyzer-lsp@claude-plugins-official": []}}), encoding="utf-8"
     )
     _fake_transcripts(home / ".claude" / "projects" / "-home-demo-projects-shop-api")
     return home
@@ -103,7 +105,7 @@ def _fake_transcripts(directory: Path) -> None:
                 "message": {"content": [{"type": "tool_use", "id": "s", "name": "Skill", "input": {"skill": "debug"}}]},
             },
         )
-        (directory / f"session-{n}.jsonl").write_text("\n".join(json.dumps(r) for r in records))
+        (directory / f"session-{n}.jsonl").write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
 
 
 def shoot(name: str, title: str, command: list[str], env: dict, cwd: Path) -> None:
@@ -130,7 +132,7 @@ def main() -> None:
         shoot("runq", "ctk runq -- pytest -q", [*ctk, "runq", "--", "pytest", "-q"], env, app)
         shoot("lsp", "ctk lsp", [*ctk, "lsp"], env, app)
         shoot("sessions", "ctk sessions", [*ctk, "sessions"], env, app)
-    leaked = [p.name for p in OUT.glob("*.svg") if str(Path.home()) in p.read_text()]
+    leaked = [p.name for p in OUT.glob("*.svg") if str(Path.home()) in p.read_text(encoding="utf-8")]
     if leaked:
         raise SystemExit(f"real home directory leaked into {leaked}")
     print(f"wrote {sorted(p.name for p in OUT.glob('*.svg'))}")

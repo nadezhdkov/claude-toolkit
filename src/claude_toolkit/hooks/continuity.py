@@ -30,7 +30,15 @@ HEADERS = {
 
 def _git(root: Path, *args: str) -> str:
     try:
-        done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, timeout=10, check=False)
+        done = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
     except (OSError, subprocess.TimeoutExpired):
         return ""
     return done.stdout.strip() if done.returncode == 0 else ""
@@ -69,7 +77,7 @@ def summary(root: Path, source: str = "compact") -> str | None:
             lines.append(f"  {SYMBOLS[check.verdict].strip()}  {check.command}{detail}")
     handoff = handoff_file(root, branch)
     if handoff:
-        text = handoff.read_text(errors="replace").splitlines()
+        text = handoff.read_text(errors="replace", encoding="utf-8").splitlines()
         age = _age(time.time() - handoff.stat().st_mtime)
         lines.append(f"handoff {handoff.relative_to(root)} (written {age}; check it against the code):")
         lines += [f"  {line}" for line in text[:HANDOFF_LINES]]

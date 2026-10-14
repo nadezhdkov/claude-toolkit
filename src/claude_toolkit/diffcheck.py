@@ -62,7 +62,9 @@ class Finding:
 
 
 def _git(root: Path, *args: str, check: bool = False) -> str:
-    done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, errors="replace", timeout=60)
+    done = subprocess.run(
+        ["git", "-C", str(root), *args], capture_output=True, text=True, errors="replace", timeout=60, encoding="utf-8"
+    )
     if check and done.returncode != 0:
         raise RuntimeError(done.stderr.strip() or f"git {' '.join(args)} failed")
     return done.stdout if done.returncode == 0 else ""
@@ -116,7 +118,7 @@ def changes(root: Path, base: str) -> list[Change]:
             path = root / change.path
             try:
                 if path.stat().st_size <= LARGE_FILE:
-                    text = path.read_text(errors="replace")
+                    text = path.read_text(errors="replace", encoding="utf-8")
                     change.added = list(enumerate(text.splitlines(), 1))
             except (OSError, UnicodeDecodeError):
                 pass
@@ -148,7 +150,9 @@ def api_findings(root: Path, base: str, change: Change) -> list[Finding]:
     if not old_text:
         return []
     path = root / change.path
-    new_text = "" if change.status == "D" else (path.read_text(errors="replace") if path.exists() else "")
+    new_text = (
+        "" if change.status == "D" else (path.read_text(errors="replace", encoding="utf-8") if path.exists() else "")
+    )
     before = {s.name: s for s in symbols_for(path, old_text) if not s.name.startswith("_")}
     after = {s.name: s for s in symbols_for(path, new_text) if not s.name.startswith("_")}
     findings = []
@@ -198,7 +202,7 @@ def debug_findings(root: Path, change: Change) -> list[Finding]:
     findings = []
     is_test = kind_of(Path(change.path)) == "test"
     try:
-        whole = (root / change.path).read_text(errors="replace")
+        whole = (root / change.path).read_text(errors="replace", encoding="utf-8")
     except OSError:
         whole = "\n".join(text for _, text in change.added)
     is_program = "argparse" in whole or "__main__" in whole or "sys.argv" in whole
@@ -230,7 +234,7 @@ def test_findings(root: Path, all_changes: list[Change]) -> list[Finding]:
     findings = []
     for change in sources:
         if change.path.endswith(".py"):
-            mapped = {str(p.relative_to(root)) for p in python_tests([root / change.path], root)}
+            mapped = {p.relative_to(root).as_posix() for p in python_tests([root / change.path], root)}
             if mapped and not mapped & tests:
                 findings.append(Finding("info", "tests", change.path, None,
                                         f"its tests were not changed: {', '.join(sorted(mapped))}"))  # fmt: skip

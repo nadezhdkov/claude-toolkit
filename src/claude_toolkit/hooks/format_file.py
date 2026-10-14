@@ -50,7 +50,7 @@ def _pyproject_has(start: Path, root: Path, table: str) -> bool:
         path = directory / "pyproject.toml"
         if path.is_file():
             try:
-                data = tomllib.loads(path.read_text())
+                data = tomllib.loads(path.read_text(encoding="utf-8"))
             except (OSError, tomllib.TOMLDecodeError):
                 return False
             return table in data.get("tool", {})
@@ -87,7 +87,7 @@ def _package_json_has(start: Path, root: Path, key: str) -> bool:
     if not found:
         return False
     try:
-        return key in json.loads(found.read_text())
+        return key in json.loads(found.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
 
@@ -116,7 +116,7 @@ def _biome(file: Path, root: Path) -> list[str] | None:
 
 def _rust_edition(manifest: Path) -> str:
     try:
-        data = tomllib.loads(manifest.read_text())
+        data = tomllib.loads(manifest.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError):
         return "2021"
     edition = data.get("package", {}).get("edition") or data.get("workspace", {}).get("package", {}).get("edition")
@@ -191,7 +191,16 @@ def handle(event: Event) -> Outcome:
         return Outcome()
     name, command = found
     try:
-        done = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=TIMEOUT, check=False)
+        done = subprocess.run(
+            command,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
     except (OSError, subprocess.TimeoutExpired):
         return Outcome()
     if done.returncode == 0:

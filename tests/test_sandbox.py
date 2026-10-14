@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+from conftest import linux_only
 
 from claude_toolkit import cli, sandbox
 
@@ -188,6 +189,7 @@ def test_tmp_is_capped_in_ram(tmp_path, capfd):
     assert "FULL" in capfd.readouterr().out
 
 
+@linux_only
 def test_limit_kills_are_recognised_by_signal():
     assert sandbox.killed_by_limit(137, scope=False) and sandbox.killed_by_limit(-9, scope=True)
     assert sandbox.killed_by_limit(143, scope=True)

@@ -93,7 +93,7 @@ def marketplace_source() -> str:
 
 def _json_keys(path: Path, key: str | None = None) -> set[str]:
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return set()
     data = data.get(key, {}) if key and isinstance(data, dict) else data
@@ -151,14 +151,14 @@ def plugin_steps(*, uninstall: bool = False) -> list[Step]:
 
 def plan(*, uninstall: bool = False) -> list[Step]:
     claude_md = claude_home() / "CLAUDE.md"
-    current = claude_md.read_text() if claude_md.exists() else ""
+    current = claude_md.read_text(encoding="utf-8") if claude_md.exists() else ""
     steps: list[Step] = []
     if uninstall:
         if START in current:
 
             def remove() -> str:
                 backup = _backup(claude_md)
-                claude_md.write_text(strip_snippet(current))
+                claude_md.write_text(strip_snippet(current), encoding="utf-8")
                 return f"removed the claude-toolkit section from {claude_md} (backup: {backup})"
 
             steps.append(Step(f"remove the claude-toolkit section from {claude_md}", remove))
@@ -170,7 +170,7 @@ def plan(*, uninstall: bool = False) -> list[Step]:
         def write() -> str:
             backup = _backup(claude_md)
             claude_md.parent.mkdir(parents=True, exist_ok=True)
-            claude_md.write_text(wanted)
+            claude_md.write_text(wanted, encoding="utf-8")
             return f"{verb}d the claude-toolkit section in {claude_md}" + (f" (backup: {backup})" if backup else "")
 
         steps.append(Step(f"{verb} a {len(SNIPPET.splitlines())}-line claude-toolkit section in {claude_md}", write))

@@ -62,13 +62,22 @@ def scan(repo: Path, *, unstaged: bool = False) -> list[str] | None:
             report = Path(tmp) / f"report-{index}.json"
             command = [*base, "--report-path", str(report)]
             try:
-                done = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=TIMEOUT, check=False)
+                done = subprocess.run(
+                    command,
+                    cwd=repo,
+                    capture_output=True,
+                    text=True,
+                    timeout=TIMEOUT,
+                    check=False,
+                    encoding="utf-8",
+                    errors="replace",
+                )
             except (OSError, subprocess.TimeoutExpired):
                 return None
             if done.returncode not in (0, 1):
                 return None
             try:
-                items = json.loads(report.read_text()) if report.exists() else []
+                items = json.loads(report.read_text(encoding="utf-8")) if report.exists() else []
             except (OSError, json.JSONDecodeError):
                 items = []
             for item in items if isinstance(items, list) else []:

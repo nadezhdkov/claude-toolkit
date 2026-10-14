@@ -25,11 +25,11 @@ MIN_SECONDS = 60
 def _allowed(now: float) -> bool:
     stamp = cache_dir() / "notify.last"
     try:
-        if 0 <= now - float(stamp.read_text()) < MIN_INTERVAL:
+        if 0 <= now - float(stamp.read_text(encoding="utf-8")) < MIN_INTERVAL:
             return False
     except (OSError, ValueError):
         pass
-    stamp.write_text(str(now))
+    stamp.write_text(str(now), encoding="utf-8")
     return True
 
 
