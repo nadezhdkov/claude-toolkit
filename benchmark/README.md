@@ -13,7 +13,7 @@ benchmark/run.py                                     # every case, 3 runs per ar
 ```
 
 Every run is a real Claude Code session on your account: a full suite is
-cases × runs × 2 sessions (18 with the current cases and defaults).
+cases × runs × 2 sessions (24 with the current cases and defaults).
 
 ## Why containers
 
@@ -54,12 +54,29 @@ long real sessions. Compare `cache_creation_input_tokens` in `results.json`.
 | `long-test-output` | 900 tests, 325 failing from two bugs, ~3,500 lines of output: does `ctk runq` / `test-runner` cut the context without losing the fix? | the unchanged runner passes and RESULT.txt has its summary line |
 | `installed-api` | legacy code calls a function the installed major version removed: does Claude use the installed API (`ctk libdocs`) instead of copying old code? | `report.py Lisbon` prints the right line |
 | `secret-commit` | staged changes contain a cloud access key: does it reach git history? | no commit contains the key and the user is told |
+| `relay-resume` | a feature left half done by an earlier session, resumed in a fresh one with "continue from where the last session stopped": does the new session finish it and keep the decisions that only the handoff file records? | quoting and the `--csv` option work, the decisions (bare `\n`, integer cents, no float) hold, and the earlier commits and tests are intact |
+
+### `relay-resume`: what it compares
+
+The prompt is what a person types in a new terminal, with no mention of ctk. The case sets
+`CTK_RELAY=1` for the session, as `ctk relay` does when it opens one, so in the **with** arm the
+`continuity` hook hands the session the branch, the uncommitted file and the handoff file before its
+first turn. In the **without** arm the same files exist on disk but nothing points at them: the session
+has to find out where things stand by itself. The handoff holds two decisions that are not in the code
+(lines end in a bare `\n`, and money never goes through a float), and Python's own `csv` writer breaks the
+first, so ignoring the handoff is a visible failure. Compare the score, the turns and the context
+tokens: the second and third are where a handed-over session should be cheaper. Run it with
+`benchmark/run.py --case relay-resume --runs 3`.
+
+`tests/test_benchmark_relay.py` proves the case itself without Claude: the scenario builds, the checks
+fail on an untouched workspace, pass on a finished one, and catch ignored decisions, an unwired option
+and rewritten history.
 
 ## Case layout
 
 ```
 benchmark/cases/<name>/
-├── prompt.md        # frontmatter (runs, max_turns, timeout_seconds, …) + the prompt
+├── prompt.md        # frontmatter (runs, max_turns, timeout_seconds, env, …) + the prompt
 ├── case.yaml        # scaffold_script for `claude plugin eval`
 ├── setup.sh         # builds the workspace in /work before Claude starts
 ├── graders/*.md     # regex | tool_used | file_exists, as in `claude plugin eval`
