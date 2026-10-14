@@ -131,6 +131,7 @@ class Case:
     timeout: int = 600
     graders: list[Grader] = field(default_factory=list)
     setup: Path | None = None
+    env: dict[str, str] = field(default_factory=dict)  # set for the claude process, as `claude plugin eval` does
 
 
 def load_case(path: Path) -> Case:
@@ -142,6 +143,7 @@ def load_case(path: Path) -> Case:
         runs=int(meta.get("runs", 3)),
         max_turns=int(meta.get("max_turns", 20)),
         timeout=int(meta.get("timeout_seconds", 600)),
+        env={str(k): str(v) for k, v in (meta.get("env") or {}).items()} if isinstance(meta.get("env"), dict) else {},
     )
     setup = path / "setup.sh"
     case.setup = setup if setup.exists() else None
@@ -354,6 +356,18 @@ class RunResult:
     transcript: str
 
 
+def claude_command(case: Case, container: str, arm: str, model: str | None = None) -> list[str]:
+    """The `docker exec` that runs the case's prompt: the same for both arms, plus the plugin in the with arm."""
+    env = [flag for key, value in case.env.items() for flag in ("-e", f"{key}={value}")]
+    command = ["exec", "-w", "/work", *env, container, "claude", "-p", case.prompt, "--output-format", "stream-json",
+               "--verbose", "--max-turns", str(case.max_turns), "--dangerously-skip-permissions"]  # fmt: skip
+    if model:
+        command += ["--model", model]
+    if arm == "with":
+        command += ["--plugin-dir", PLUGIN_IN_IMAGE]
+    return command
+
+
 def run_once(case: Case, arm: str, index: int, args, tag: str, credentials: dict, out_dir: Path) -> RunResult:
     name = f"ctk-bench-{os.getpid()}-{case.name}-{arm}-{index}"
     env = {**os.environ, **credentials}
@@ -386,12 +400,7 @@ def run_once(case: Case, arm: str, index: int, args, tag: str, credentials: dict
             docker("exec", name, "sh", "-c", write)
         # Files newer than this marker were made by Claude.
         docker("exec", name, "sh", "-c", "sleep 1; touch /tmp/.ctk-bench-start")
-        command = ["exec", "-w", "/work", name, "claude", "-p", case.prompt, "--output-format", "stream-json",
-                   "--verbose", "--max-turns", str(case.max_turns), "--dangerously-skip-permissions"]  # fmt: skip
-        if args.model:
-            command += ["--model", args.model]
-        if arm == "with":
-            command += ["--plugin-dir", PLUGIN_IN_IMAGE]
+        command = claude_command(case, name, arm, args.model)
         try:
             done = docker(*command, timeout=case.timeout, env=env)
             raw = done.stdout

@@ -135,3 +135,18 @@ def test_failed_runs_are_counted_but_not_scored():
 def test_error_results_keep_their_message():
     line = {"type": "result", "subtype": "success", "is_error": True, "result": "You've hit your session limit"}
     assert bench.Transcript.parse(json.dumps(line)).error == "You've hit your session limit"
+
+
+def test_case_env_reaches_the_claude_process_in_both_arms():
+    case = bench.load_case(ROOT / "benchmark" / "cases" / "relay-resume")
+    assert case.env == {"CTK_RELAY": "1"}
+    for arm in ("with", "without"):
+        command = bench.claude_command(case, "box", arm)
+        assert command[:5] == ["exec", "-w", "/work", "-e", "CTK_RELAY=1"], "options come before the container name"
+        assert command[5:7] == ["box", "claude"] and case.prompt in command
+        assert ("--plugin-dir" in command) == (arm == "with")
+    assert (
+        "-e"
+        not in bench.claude_command(bench.load_case(ROOT / "benchmark" / "cases" / "secret-commit"), "box", "with")[:6]
+    )
+    assert command[command.index("--max-turns") + 1] == str(case.max_turns)
