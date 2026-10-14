@@ -47,6 +47,10 @@ make ci                                               # all of the above (`make`
 
 - Python 3.11+, type hints, `from __future__ import annotations`, dataclasses.
 - One module per command in `src/claude_toolkit/`; wire it in `cli.py`.
+- Skills live in `plugin/skills/` (the `ctk` plugin) and `.claude/skills/` (this project's
+  own). `.agents/skills/` is their mirror for other agents: never edit it, run `make skills`
+  (`tests/test_agent_skills.py` fails when it is stale). A skill that needs Claude Code
+  features, such as its subagents, is listed in `CLAUDE_ONLY` in `scripts/sync_agent_skills.py`.
 - Documentation in English, which is the source of truth. `README.md` and
   `docs/installation.md` are translated in `docs/i18n/<language>/`: when you
   change either, update the four translations in the same pull request

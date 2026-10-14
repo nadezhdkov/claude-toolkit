@@ -2,7 +2,7 @@
 # Needs make and uv; on Windows use the uv commands directly (or make from Git for Windows/MSYS2).
 
 .DEFAULT_GOAL := help
-.PHONY: help sync lint format test check shellcheck actions ci screenshots install
+.PHONY: help sync lint format test check shellcheck actions ci screenshots install skills
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-12s %s\n", $$1, $$2}'
@@ -37,3 +37,6 @@ screenshots: ## regenerate the README screenshots (synthetic data)
 
 install: ## run the installer (asks before each step)
 	./install.sh
+
+skills: ## regenerate .agents/skills from plugin/skills and .claude/skills
+	python3 scripts/sync_agent_skills.py

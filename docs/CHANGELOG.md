@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `.agents/skills/`: a copy of the skills (`debug`, `ship`, `handoff`, `onboard-repo`, `visual-qa`,
+  `security-pass` and the project's `issue`) in the open `SKILL.md` layout, so agents other than
+  Claude Code can use them. `make skills` generates it from `plugin/skills/` and `.claude/skills/`,
+  and a test fails when it is out of date. `orchestrate` stays Claude Code only.
 - Translations of the README and the installation guide into Português (Brasil),
   Español, Deutsch and 简体中文 in `docs/i18n/`, with a language switcher in
   both English pages. `tests/test_i18n.py` keeps them in step with the English
