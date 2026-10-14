@@ -36,6 +36,7 @@ itself (so `make test` that runs pytest is still recognised).
 | cargo | `error[E…]`, `-->` locations, failing tests | `test result:` |
 | go test | `--- FAIL`, `file.go:line:`, `panic:` | `ok`/`FAIL` package lines |
 | gradle | `FAILED`, compiler errors | `BUILD SUCCESSFUL/FAILED` |
+| node --test (spec and TAP reporters) | `✖` tests with their indented error lines, `not ok N -` with diagnostics | `ℹ tests/pass/fail …`, `# tests/pass/fail …` |
 | anything else | lines containing error, fail, panic, exception, traceback, fatal | — |
 
 ## Done criteria

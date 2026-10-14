@@ -41,6 +41,70 @@ def test_quiet_pytest_summary_is_recognised():
     assert text.splitlines()[-1] == "1 failed, 69 passed in 0.50s"
 
 
+def test_node_test_spec_reporter_extracts_failures_and_summary():
+    output = """✔ passing test (1.2ms)
+✖ first failure (2.3ms)
+  AssertionError [ERR_ASSERTION]: expected 1 to equal 2
+      at TestContext.<anonymous> (test.js:8:3)
+✖ second failure (3.4ms)
+  Error: unexpected value
+      at TestContext.<anonymous> (test.js:14:3)
+\u2139 tests 3
+\u2139 pass 1
+\u2139 fail 2
+\u2139 cancelled 0
+\u2139 skipped 0
+\u2139 todo 0"""
+    digest = runq.digest_output(["node", "--test"], output.splitlines())
+    assert digest.tool == "node-test"
+    assert len(digest.failures) == 2
+    assert "first failure" in digest.failures[0] and "ERR_ASSERTION" in digest.failures[0]
+    assert "second failure" in digest.failures[1] and "unexpected value" in digest.failures[1]
+    assert digest.failure_count == 2
+    assert digest.summary == [
+        "\u2139 tests 3",
+        "\u2139 pass 1",
+        "\u2139 fail 2",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+    ]
+
+
+def test_node_test_tap_and_spec_output_signature_detection():
+    tap = """TAP version 13
+not ok 1 - first failure
+  ---
+  error: AssertionError
+  ...
+ok 2 - passing test
+not ok 3 - second failure
+  ---
+  error: unexpected value
+  ...
+1..3
+# tests 3
+# pass 1
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0"""
+    digest = runq.digest_output(["node", "--test", "test.js"], tap.splitlines())
+    assert digest.tool == "node-test" and len(digest.failures) == 2
+    assert "AssertionError" in digest.failures[0] and "unexpected value" in digest.failures[1]
+    assert digest.failure_count == 2
+    assert digest.summary == ["# tests 3", "# pass 1", "# fail 2", "# cancelled 0", "# skipped 0", "# todo 0"]
+
+    spec = "✔ passes\n✖ fails\n  Error: nope\n\u2139 tests 2\n\u2139 pass 1\n\u2139 fail 1"
+    detected = runq.digest_output(["npm", "test"], spec.splitlines())
+    assert detected.tool == "node-test" and len(detected.failures) == 1
+
+
+def test_eslint_summary_is_not_mistaken_for_node_test():
+    output = "/src/a.js\n  1:1  error  'x' is not defined  no-undef\n\n\u2716 1 problem (1 error, 0 warnings)"
+    assert runq.digest_output(["npm", "run", "lint"], output.splitlines()).tool != "node-test"
+
+
 def test_typescript_errors():
     output = "\n".join(
         [f"src/a{i}.ts(1,1): error TS2322: Type 'string' is not assignable" for i in range(70)] + ["Found 70 errors."]

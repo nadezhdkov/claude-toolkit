@@ -72,6 +72,43 @@ def _js_test(lines: list[str]) -> Digest:
     return digest
 
 
+def _node_test(lines: list[str]) -> Digest:
+    """Extract failures and counts from Node's spec and TAP reporters."""
+    digest = Digest("node-test")
+    spec = any(re.match(r"^\s*\u2139 tests \d+", line) for line in lines)
+    if spec:
+        # Spec reporter prints the failing test as ✖ and indents its error
+        # details beneath it. Keep those details with the test name.
+        for index, line in enumerate(lines):
+            if re.match(r"^\s*✖\s", line):
+                failure = line.rstrip()
+                for detail in lines[index + 1 :]:
+                    if detail.strip() and not detail.startswith("  "):
+                        break
+                    if detail.strip():
+                        failure += "\n" + detail.rstrip()
+                digest.failures.append(failure)
+        digest.failure_count = sum(
+            int(match.group(1)) for line in lines if (match := re.match(r"^\s*\u2139 fail (\d+)", line))
+        )
+        digest.summary = _collect(lines, re.compile(r"^\s*\u2139 (tests|pass|fail|cancelled|skipped|todo) \d+"))
+        return digest
+
+    for index, line in enumerate(lines):
+        if re.match(r"^\s*not ok \d+\s+-", line):
+            failure = line.rstrip()
+            # TAP diagnostics are commonly emitted as YAML-like indented lines.
+            for detail in lines[index + 1 :]:
+                if detail.startswith("  "):
+                    failure += "\n" + detail.rstrip()
+                elif detail.strip():
+                    break
+            digest.failures.append(failure)
+    digest.failure_count = sum(int(match.group(1)) for line in lines if (match := re.match(r"^# fail (\d+)", line)))
+    digest.summary = _collect(lines, re.compile(r"^# (tests|pass|fail|cancelled|skipped|todo) \d+"))
+    return digest
+
+
 def _tsc(lines: list[str]) -> Digest:
     digest = Digest("tsc")
     digest.failures = _collect(lines, re.compile(r"error TS\d+:"))
@@ -126,6 +163,12 @@ def _generic(lines: list[str]) -> Digest:
 
 # (command hint, output signature, extractor)
 EXTRACTORS: list[tuple[re.Pattern, re.Pattern, Callable[[list[str]], Digest]]] = [
+    (
+        re.compile(r"\bnode\b.*\s--test\b"),
+        # Not a bare ✖ line: eslint prints "✖ 3 problems" too.
+        re.compile(r"^\s*(?:\u2139 tests \d+|not ok \d+\s+-|# (?:tests|fail) \d+)"),
+        _node_test,
+    ),
     (re.compile(r"\bpytest\b|\bpy\.test\b"), re.compile(r"^=+ test session starts =+"), _pytest),
     (re.compile(r"\b(vitest|jest)\b"), re.compile(r"^\s*(Test Files|Test Suites):"), _js_test),
     (re.compile(r"\btsc\b"), re.compile(r"error TS\d+:"), _tsc),

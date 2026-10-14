@@ -102,7 +102,7 @@ cd claude-toolkit
 
 运行命令，把完整输出保存到日志，只打印失败项、摘要和日志路径。
 较短的输出原样打印，退出码始终保留。
-能识别 pytest、vitest/jest、tsc、ruff/eslint、cargo、go test 和 gradle，其他情况使用通用的兜底规则。
+能识别 pytest、vitest/jest、tsc、ruff/eslint、cargo、go test、gradle 和 `node --test`，其他情况使用通用的兜底规则。
 
 <img src="../../assets/screenshots/runq.svg" alt="ctk runq 的输出：高亮显示失败的测试，以及退出码、耗时和日志路径">
 
