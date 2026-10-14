@@ -2,11 +2,26 @@
 name = "claude-toolkit"
 version = "0.3.0"
 description = "General-purpose tools, hooks, skills and subagents that make Claude Code more effective in any project"
-readme = "README.md"
+dynamic = ["readme"]  # README.md with its relative links made absolute for the PyPI page (below)
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "nadezhdkov" }]
 keywords = ["claude-code", "developer-tools", "cli", "lsp", "testing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Quality Assurance",
+]
 # Runtime is stdlib-only on purpose: fast start-up and nothing to break.
 dependencies = []
 
@@ -16,16 +31,36 @@ ctk = "claude_toolkit.cli:main"
 [project.urls]
 Homepage = "https://github.com/nadezhdkov/claude-toolkit"
 Changelog = "https://github.com/nadezhdkov/claude-toolkit/blob/main/docs/CHANGELOG.md"
+Documentation = "https://github.com/nadezhdkov/claude-toolkit/tree/main/docs"
+Issues = "https://github.com/nadezhdkov/claude-toolkit/issues"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.25", "hatch-fancy-pypi-readme>=24.1"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/claude_toolkit"]
+
+# The source distribution: the package, its tests and the files a build needs; not the plugin,
+# benchmark or docs, which live in the repository (`ctk setup` takes the plugin from GitHub).
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [{ path = "README.md" }]
+
+# PyPI shows the README outside the repository: images and links must be absolute.
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = 'src="(docs/assets/[^"]+)"'
+replacement = 'src="https://raw.githubusercontent.com/nadezhdkov/claude-toolkit/main/\1"'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\((?!https?://|#)([^)]+)\)'
+replacement = '](https://github.com/nadezhdkov/claude-toolkit/blob/main/\1)'
 
 [tool.ruff]
 line-length = 120

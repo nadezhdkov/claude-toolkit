@@ -12,6 +12,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
   command line parser, so commands, `shoot` kinds, options and fixed choices (`verify`, `hook`,
   `libdocs --ecosystem`) are completed without a list to maintain. Nothing is written to your shell
   configuration. Tested by running bash, fish and PowerShell for real.
+- PyPI packaging: complete metadata (classifiers, URLs, license file), a README whose relative
+  links and images become absolute on the PyPI page, and a source distribution limited to the package
+  and its tests. `CI / Package` builds both files, runs `twine check --strict` and smoke-tests the
+  wheel in a clean environment. The `Release` workflow can publish to PyPI by trusted publishing
+  (no password or token stored) once the `PYPI_PUBLISH` variable is `true` and PyPI trusts the
+  workflow; see docs/releasing.md.
 - `ctk sessions --compare BASELINE CURRENT`: compares two periods (`START..END` as dates or `Nd` days
   ago) and says whether the Phase 8 criterion is met: the median peak window and the median Bash
   re-read cost per session both fell by at least half. Exit `0` for a pass, `1` for a fail or too
