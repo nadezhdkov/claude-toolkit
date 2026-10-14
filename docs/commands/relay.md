@@ -42,6 +42,16 @@ terminal fails to start, nothing is locked and Claude asks the user to type
 `/clear`: `continuity` also runs after `/clear`, so the same session continues
 from the handoff with an empty window.
 
+## Folder trust
+
+Claude Code asks whether you trust a folder the first time it opens there, and
+the new session waits on that question until someone answers it. Trust in a
+folder covers everything below it, so trusting the folder that holds your
+projects (for example `~/Documents/projects`, by starting `claude` there once)
+also covers every repository and worktree inside it. Do not trust `/tmp` or
+another directory that other users can write to: a trusted folder runs the
+hooks and settings of any project created inside it without asking.
+
 ## Configuration
 
 `[relay]` in `~/.config/claude-toolkit/config.toml` or the project's
