@@ -18,4 +18,5 @@ COMMANDS = (
     "verify",
     "diffcheck",
     "relay",
+    "completion",
 )

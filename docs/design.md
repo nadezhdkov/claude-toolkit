@@ -64,6 +64,7 @@ claude-toolkit/
 │   ├── verify.py         # evidence ledger: checks per code state
 │   ├── diffcheck.py      # deterministic checks of a change
 │   ├── relay.py          # hand the work over to a fresh session
+│   ├── completion.py     # tab completion scripts, generated from the parser
 │   ├── hooks/            # `ctk hook <name>`: logic behind the plugin hooks
 │   ├── semver.py         # npm-style ranges
 │   └── pep440.py         # Python version specifiers
