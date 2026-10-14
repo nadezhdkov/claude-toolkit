@@ -12,7 +12,7 @@ event JSON on stdin, so all logic lives in the tested `ctk` package.
 | `secrets` | before Bash (`git commit`) | `gitleaks` on the staged changes; denies the commit on findings |
 | `notify` | waiting for input, end of a long turn | desktop notification, at most one per minute |
 | `continuity` | session starts after a compaction, `/clear`, a resume or a relay | puts back the branch, commit, uncommitted files, `ctk verify` status and the branch's handoff file |
-| `relay` | end of turn, before Edit/Write | past the relay point, asks Claude once to hand over to a fresh session (`ctk relay`); then denies the old session's edits |
+| `relay` | end of turn, before Edit/Write | past the relay point, asks Claude once to hand over to a fresh session (`ctk relay`); then denies the old session's edits (and with `[relay] close-old` closes its window) |
 | `runq-nudge` | after Bash | long output that did not go through `ctk`: suggests `ctk runq` or filtering, once per command |
 | `agent-contract` | a ctk subagent finishes | sends a report that breaks its output contract back once ([agents](../agents.md)) |
 

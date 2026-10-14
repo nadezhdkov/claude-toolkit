@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -365,3 +366,48 @@ def test_sessions_report_shows_the_relay_point(tmp_path):
     assert summary.median_window_growth == 15_000 and summary.relay_threshold
     text = sessions.render(summary, "test", style=None)
     assert "relay point" in text and f"{summary.relay_threshold:,} tokens" in text
+
+
+# --- close-old -------------------------------------------------------------------------
+
+
+posix = pytest.mark.skipif(os.name == "nt", reason="closing the old window is POSIX only")
+
+
+@posix
+def test_close_target_is_the_shell_running_claude_else_claude():
+    tree = {10: (5, "claude"), 5: (2, "zsh"), 20: (2, "claude"), 2: (1, "konsole")}
+    assert relay.close_target({"CLAUDE_PID": "10"}, tree.get) == (5, "zsh")
+    assert relay.close_target({"CLAUDE_PID": "20"}, tree.get) == (20, "claude"), "run by the terminal itself"
+    assert relay.close_target({"CLAUDE_PID": "5"}, tree.get) is None, "not claude: never hang it up"
+    assert relay.close_target({}, tree.get) is None
+
+
+@posix
+def test_close_later_hangs_up_only_the_recorded_process(tmp_path):
+    process = subprocess.Popen(["sleep", "30"])
+    try:
+        assert not relay.close_later(process.pid, "bash", delay=0), "a reused pid is left alone"
+        assert relay.close_later(process.pid, "sleep", delay=0)
+        assert process.wait(timeout=5) == -signal.SIGHUP
+    finally:
+        process.kill()
+
+
+def test_relay_close_old_closes_the_window_when_the_turn_ends(tmp_path, monkeypatch, capsys, launched):
+    repo = git_repo(tmp_path / "repo")
+    write_handoff(repo)
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "old")
+    monkeypatch.setattr(relay, "close_target", lambda env: (4242, "zsh"))
+    assert ctk(repo, monkeypatch, "--yes") == 0
+    assert "closes when the turn ends" not in capsys.readouterr().out, "off by default"
+    relay.release("old")
+    (repo / ".claude-toolkit.toml").write_text("[relay]\nclose-old = true\n")
+    assert ctk(repo, monkeypatch, "--yes") == 0
+    assert "This window closes when the turn ends" in capsys.readouterr().out
+    closed = []
+    monkeypatch.setattr(relay, "close_later", lambda pid, name: closed.append((pid, name)))
+    large = transcript(tmp_path / "t.jsonl", [400_000])
+    assert hooks.dispatch("relay", stop(repo, large, session="old")).stdout == ""
+    assert hooks.dispatch("relay", stop(repo, large, session="old")).stdout == ""
+    assert closed == [(4242, "zsh")], "closed once, at the end of the turn"
