@@ -157,3 +157,21 @@ jobs:
           plugin/bin/ctk --version
           echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}' | ctk hook guard-destructive
 
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Build, check the metadata and install the wheel in a clean environment
+        run: |
+          uv build
+          uvx --from twine==7.0.0 twine check --strict dist/*
+          uv venv "$RUNNER_TEMP/clean"
+          uv pip install --python "$RUNNER_TEMP/clean/bin/python" dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/clean/bin/ctk" --version
+          "$RUNNER_TEMP/clean/bin/ctk" doctor "$RUNNER_TEMP"
+          "$RUNNER_TEMP/clean/bin/ctk" setup --dry-run

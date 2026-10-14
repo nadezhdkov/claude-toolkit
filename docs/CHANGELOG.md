@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- PyPI packaging: complete metadata (classifiers, URLs, license file), a README whose relative
+  links and images become absolute on the PyPI page, and a source distribution limited to the package
+  and its tests. `CI / Package` builds both files, runs `twine check --strict` and smoke-tests the
+  wheel in a clean environment. The `Release` workflow can publish to PyPI by trusted publishing
+  (no password or token stored) once the `PYPI_PUBLISH` variable is `true` and PyPI trusts the
+  workflow; see docs/releasing.md.
 - `.agents/skills/`: a copy of the skills (`debug`, `ship`, `handoff`, `onboard-repo`, `visual-qa`,
   `security-pass` and the project's `issue`) in the open `SKILL.md` layout, so agents other than
   Claude Code can use them. `make skills` generates it from `plugin/skills/` and `.claude/skills/`,
