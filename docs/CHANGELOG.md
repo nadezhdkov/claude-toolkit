@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Roadmap: Phase 7 is closed. `ctk recall` is not built because the
+  transcripts show no missing search (5 repeated searches in 1,944, none
+  repeated after a compaction); Phase 8 re-checks it.
+
 ## [0.3.0] - 2026-10-13
 
 The `ctk` Claude Code plugin (quality hooks, process skills, subagents with

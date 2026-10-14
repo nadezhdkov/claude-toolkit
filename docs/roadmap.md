@@ -50,7 +50,7 @@ Measured with `ctk sessions`: "file changed on disk" notices must not rise.
 - ✅ `ctk libdocs` ([docs](commands/libdocs.md)): installed version, source path, README and types of a
   dependency, to stop writing code against the wrong API version.
 
-## 🚧 Phase 7 — context and evidence
+## ✅ Phase 7 — context and evidence
 
 From the context-engineering review, measured with the benchmark and real
 transcripts (2.5 billion tokens read in a week, 99% from cache, a median peak
@@ -63,7 +63,11 @@ window of 560k tokens, Bash outputs re-read ~390M times over):
 - ✅ `ctk verify`: evidence ledger of checks per code state.
 - ✅ `ctk diffcheck`: deterministic checks of a change.
 - ✅ `continuity` hook: verified state after a compaction.
-- ⏳ `ctk recall`, only if the measurements show search is still missing (after Phase 8).
+- ➖ `ctk recall`: not built, because search is not missing. Over 61 sessions
+  (measured 2026-10-13), 1,944 of 15,778 tool calls were searches, only 5
+  repeated an identical earlier search, and none of the 501 searches after a
+  compaction repeated one from before it. Re-checked with the Phase 8
+  measurement.
 
 ## ✅ Phase 6 — subagents
 
@@ -109,4 +113,5 @@ and safe to start, so the work moves on to it with only what matters.
 
 Done when, over a week of real use, the median peak window and the Bash
 re-read cost have both fallen by at least half, and the benchmark scores have
-not dropped. `ctk recall` (Phase 7) waits for this measurement.
+not dropped. The same week re-checks whether search is missing (the
+`ctk recall` question closed in Phase 7).
