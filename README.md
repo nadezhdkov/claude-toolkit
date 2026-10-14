@@ -89,6 +89,7 @@ Run `ctk` on its own for an overview:
 | [`ctk verify`](docs/commands/verify.md) | What is verified for the code as it is now: every `runq` run recorded per code state; fresh, failing, stale or never run |
 | [`ctk diffcheck`](docs/commands/diffcheck.md) | Deterministic checks of a change: removed API still in use, risky files, debug leftovers, code without tests |
 | [`ctk relay`](docs/commands/relay.md) | Hands the work over to a fresh Claude Code session in a new terminal, from the handoff file and the verified state |
+| [`ctk completion`](docs/commands/completion.md) | Tab completion for bash, zsh, fish and PowerShell, generated from the commands themselves |
 | [`ctk setup`](docs/installation.md#what-ctk-setup-changes) | Wires the toolkit into Claude Code, asking before each change |
 | [`ctk hook`](docs/commands/hooks.md) | Logic behind the plugin hooks (event JSON on stdin) |
 

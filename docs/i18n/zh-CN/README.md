@@ -84,6 +84,7 @@ cd claude-toolkit
 | [`ctk verify`](../../commands/verify.md) | 当前代码已验证了什么：按代码状态记录每次 `runq` 运行；有效、失败、过期或从未运行 |
 | [`ctk diffcheck`](../../commands/diffcheck.md) | 对一次改动的确定性检查：已删除却仍在使用的 API、有风险的文件、调试残留、没有测试的代码 |
 | [`ctk relay`](../../commands/relay.md) | 在新终端中把工作交给一个全新的 Claude Code 会话，依据 handoff 文件和已验证的状态 |
+| [`ctk completion`](../../commands/completion.md) | 为 bash、zsh、fish 和 PowerShell 提供 Tab 补全，由命令本身生成 |
 | [`ctk setup`](installation.md) | 把工具包接入 Claude Code，每次改动前都会询问 |
 | [`ctk hook`](../../commands/hooks.md) | 插件 hooks 背后的逻辑（事件 JSON 从标准输入读取） |
 

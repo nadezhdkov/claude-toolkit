@@ -147,6 +147,12 @@ def _diffcheck(args: argparse.Namespace) -> int:
     return diffcheck.run(args)
 
 
+def _completion(args: argparse.Namespace) -> int:
+    from . import completion
+
+    return completion.run(args)
+
+
 def _relay(args: argparse.Namespace) -> int:
     from . import relay
 
@@ -181,6 +187,7 @@ OVERVIEW = (
     ("verify", "what is verified for the current code: fresh, failing, stale or never run"),
     ("diffcheck", "deterministic checks of a change: removed API, risky files, debug leftovers, tests"),
     ("relay", "hand the work over to a fresh Claude Code session in a new terminal"),
+    ("completion", "tab completion for bash, zsh, fish and PowerShell, generated from the commands"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -387,6 +394,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="show the command and change nothing")
     p.add_argument("--yes", action="store_true", help="open the new session without asking")
     p.set_defaults(func=_relay)
+
+    from .completion import SHELLS
+
+    p = sub.add_parser("completion", help="print the tab completion script of a shell")
+    p.add_argument("shell", choices=SHELLS)
+    p.set_defaults(func=_completion)
 
     from .hooks import HOOKS
 

@@ -13,6 +13,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   removes a folder it did not write, and leaves out the project-only `issue` skill), and
   `--agents-file FILE` adds the short `ctk` section, without the Claude-only hooks sentence, to a
   global instructions file you name. Both are undone by `--uninstall`. The skills ship inside the wheel.
+- `ctk completion bash|zsh|fish|powershell`: prints a tab completion script generated from the
+  command line parser, so commands, `shoot` kinds, options and fixed choices (`verify`, `hook`,
+  `libdocs --ecosystem`) are completed without a list to maintain. Nothing is written to your shell
+  configuration. Tested by running bash, fish and PowerShell for real.
 - PyPI packaging: complete metadata (classifiers, URLs, license file), a README whose relative
   links and images become absolute on the PyPI page, and a source distribution limited to the package
   and its tests. `CI / Package` builds both files, runs `twine check --strict` and smoke-tests the
