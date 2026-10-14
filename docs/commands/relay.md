@@ -26,6 +26,8 @@ window passes the relay point:
    handoff file.
 3. The old session is locked: the `relay` hook denies its edits, so two
    sessions never edit the same worktree. Claude ends its turn there.
+4. With `close-old = true`, the old window closes when that turn ends, so only
+   the new one stays open (see [Closing the old window](#closing-the-old-window)).
 
 ```text
 relay: open a new konsole window in /home/me/project running:
@@ -71,7 +73,19 @@ auto = true                          # open without asking (default false: asks,
 terminal = "alacritty"               # a known name, or a custom prefix:
 # terminal = ["foot", "-D", "{cwd}"] # the claude command is appended; {cwd} is the repository root
 claude-args = ["--model", "opus"]    # extra arguments for the new claude
+close-old = true                     # close the old window when its last turn ends (default false)
 ```
+
+## Closing the old window
+
+With `close-old = true`, `ctk relay` records which process to hang up: the
+shell that runs the old `claude` (its window or tab closes when the shell
+exits, in every terminal and in tmux), or `claude` itself when the terminal
+runs it directly, as a relay starts it. When the old session's turn ends, the
+`relay` hook sends that process `SIGHUP` a second later, once, and only if
+the pid still belongs to the same program. Other windows and tabs of the
+terminal stay open. The old conversation is not lost: `claude --resume` opens
+it again. Linux and macOS only; on Windows the old window stays open.
 
 The variables Claude Code sets for its own session (`CLAUDECODE`,
 `CLAUDE_CODE_SESSION_ID`, …) are removed from the new session's environment.
@@ -92,3 +106,6 @@ attached.
   the old session's variables, and locks the old session; `--release` unlocks
   it. A terminal that fails at once is reported and locks nothing.
 - With no terminal found it falls back to `/clear`.
+- `close-old` is off by default; when on, the end of the old session's turn
+  hangs up the shell running `claude` (else `claude`), once, and never a
+  process whose pid was reused.

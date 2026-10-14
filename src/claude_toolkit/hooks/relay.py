@@ -5,7 +5,8 @@ session's current window from the transcript. Once that passes the threshold
 (``[hooks.relay] threshold``; ``ctk sessions`` shows the relay point for your
 own sessions), it asks Claude, once per session, to bring the handoff file up
 to date and run ``ctk relay``. After a relay, the old session's edits are
-denied, so two sessions never edit the same worktree.
+denied, so two sessions never edit the same worktree; with ``[relay] close-old``
+the end of its next turn closes its window.
 """
 
 from __future__ import annotations
@@ -47,11 +48,24 @@ def current_window(transcript: Path) -> int | None:
     return None
 
 
+def _close(state: State, data: dict) -> None:
+    """The turn after a relay ended: close the old window that ``ctk relay`` recorded, once."""
+    from ..relay import close_later
+
+    target = data.pop("close")
+    state.save(data)
+    if isinstance(target, list) and len(target) == 2 and isinstance(target[0], int):
+        close_later(int(target[0]), str(target[1]))
+
+
 def _ask(event: Event) -> Outcome:
-    if event.data.get("stop_hook_active"):
-        return Outcome()
     state = State(event.session_id, "relay")
     data = state.load()
+    if data.get("relayed_at") and data.get("close"):
+        _close(state, data)
+        return Outcome()
+    if event.data.get("stop_hook_active"):
+        return Outcome()
     if data.get("asked") or data.get("relayed_at"):
         return Outcome()
     transcript = event.data.get("transcript_path")

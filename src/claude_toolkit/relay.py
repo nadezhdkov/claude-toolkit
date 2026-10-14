@@ -12,7 +12,8 @@ detected from the environment or set with ``[relay] terminal``. Opening a
 window changes the system, so it asks first; without a terminal it exits 3
 unless ``[relay] auto = true``. Once the new session is open, the old one is
 locked: the ``relay`` hook denies its edits, so two sessions never edit the
-same worktree.
+same worktree. With ``[relay] close-old = true`` its window also closes when
+its turn ends (Linux and macOS), so only the new one stays open.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ import os
 import platform
 import shlex
 import shutil
+import signal
 import subprocess
 import time
 from collections.abc import Callable, Mapping
@@ -199,10 +201,12 @@ def child_env(env: Mapping[str, str], from_session: str | None) -> dict[str, str
 # --- Lock of the old session ----------------------------------------------------------
 
 
-def lock(session_id: str, terminal: str) -> None:
+def lock(session_id: str, terminal: str, close: tuple[int, str] | None = None) -> None:
     state = State(session_id, "relay")
     data = state.load()
     data.update({"relayed_at": time.time(), "terminal": terminal})
+    if close:
+        data["close"] = list(close)
     state.save(data)
 
 
@@ -214,7 +218,72 @@ def release(session_id: str) -> None:
     state = State(session_id, "relay")
     data = state.load()
     data.pop("relayed_at", None)
+    data.pop("close", None)
     state.save(data)
+
+
+# --- Closing the old window ----------------------------------------------------------
+
+SHELLS = {"bash", "zsh", "fish", "sh", "dash", "ksh", "mksh", "tcsh", "csh", "nu", "elvish", "xonsh"}
+
+
+def _process(pid: int) -> tuple[int, str] | None:
+    """(parent pid, command name) of a process, from /proc or ps; None if it is gone."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+        name = stat[stat.index("(") + 1 : stat.rindex(")")]
+        return int(stat[stat.rindex(")") + 2 :].split()[1]), name
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        done = subprocess.run(
+            ["ps", "-o", "ppid=", "-o", "comm=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            encoding="utf-8",
+        )
+        ppid, name = done.stdout.split(None, 1)
+        return int(ppid), Path(name.strip()).name
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return None
+
+
+def close_target(env: Mapping[str, str], process: Callable[[int], tuple[int, str] | None] = _process):
+    """What to hang up so the old window closes: (pid, name) of the shell that runs claude, else claude itself.
+
+    A shell that exits closes its window or tab in every terminal; a claude run directly by the
+    terminal (as a relay starts it) closes the window when it exits. None on Windows or when unknown.
+    """
+    if os.name == "nt" or not env.get("CLAUDE_PID", "").isdigit():
+        return None
+    claude = int(env["CLAUDE_PID"])
+    info = process(claude)
+    if info is None or not info[1].startswith("claude"):
+        return None
+    parent = process(info[0]) if info[0] > 1 else None
+    if parent and parent[1].lstrip("-") in SHELLS:
+        return info[0], parent[1]
+    return claude, info[1]
+
+
+def close_later(pid: int, name: str, delay: float = 1.0) -> bool:
+    """Hang up ``pid`` after ``delay`` from a detached process, if it is still ``name`` (pids are reused)."""
+    current = _process(pid)
+    if os.name == "nt" or current is None or current[1] != name:
+        return False
+    try:
+        subprocess.Popen(
+            ["sh", "-c", f"sleep {delay}; kill -{int(signal.SIGHUP)} {pid}"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError:
+        return False
+    return True
 
 
 # --- Command -------------------------------------------------------------------------
@@ -315,7 +384,10 @@ def run(args) -> int:
         print(f"relay: {command[0]} is not installed. Set [relay] terminal, or ask the user to type /clear.")
         return 1
 
+    close = close_target(env) if config.get("close-old") is True and session else None
     print(f"relay: open a new {label} window in {root} running:\n  {shlex.join(command)}")
+    if close:
+        print(f"relay: then close this window (hang up {close[1]}, pid {close[0]}) when this turn ends")
     if args.dry_run:
         return 0
     if not confirm("Open the new session?", assume_yes=args.yes or config.get("auto") is True):
@@ -326,9 +398,10 @@ def run(args) -> int:
         print(f"relay: could not open the new session ({error}). Ask the user to type /clear instead.")
         return 1
     if session:
-        lock(session, label)
+        lock(session, label, close)
     print(
         "relay: the new session is open and continues from the handoff. End your turn now and change "
         "nothing more in this session (its edits are now denied); tell the user in one line."
+        + (" This window closes when the turn ends." if close else "")
     )
     return 0

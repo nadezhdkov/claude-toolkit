@@ -1,0 +1,1 @@
+- `ctk relay`: `[relay] close-old = true` closes the old session's window when its last turn ends, so only the new one stays open (Linux and macOS).
