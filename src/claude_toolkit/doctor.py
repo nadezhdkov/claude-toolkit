@@ -315,41 +315,58 @@ class Dependency:
     packages: dict[str, str]  # package manager -> install command
     # False until the command or hook that needs it ships; unreleased needs stay silent.
     shipped: bool = True
+    systems: tuple[str, ...] | None = None  # platform.system() names it exists on; None: all
+
+    def applies(self, host: Host) -> bool:
+        return self.systems is None or host.system in self.systems
 
     def hint(self, host: Host) -> str | None:
         return self.packages.get(host.package_manager or "") or self.packages.get("any")
 
 
-def _pm(pacman: str, apt: str | None = None, dnf: str | None = None, brew: str | None = None) -> dict[str, str]:
-    return {
+def _pm(
+    pacman: str, apt: str | None = None, dnf: str | None = None, brew: str | None = None, winget: str | None = None
+) -> dict[str, str]:
+    packages = {
         "pacman": f"sudo pacman -S --needed {pacman}",
         "apt": f"sudo apt install {apt or pacman}",
         "dnf": f"sudo dnf install {dnf or pacman}",
         "brew": f"brew install {brew or pacman}",
     }
+    if winget:
+        packages["winget"] = f"winget install --id {winget} -e"
+    return packages
 
 
 TOOLKIT_DEPENDENCIES = (
-    Dependency("git", "version control", True, _pm("git")),
+    Dependency("git", "version control", True, _pm("git", winget="Git.Git")),
     Dependency(
         "uv",
         "installs and runs the toolkit",
         True,
-        {**_pm("uv"), "any": "curl -LsSf https://astral.sh/uv/install.sh | sh"},
+        {**_pm("uv", winget="astral-sh.uv"), "any": "curl -LsSf https://astral.sh/uv/install.sh | sh"},
     ),
     Dependency(
         "claude", "Claude Code CLI (plugins, LSP)", True, {"any": "see https://docs.claude.com/en/docs/claude-code"}
     ),
-    Dependency("gh", "GitHub workflows (PRs, CI)", False, _pm("github-cli", "gh", "gh", "gh")),
-    Dependency("ffmpeg", "audio checks (`ctk audiocheck`) and desktop captures", False, _pm("ffmpeg")),
-    Dependency("bwrap", "sandbox for untrusted code (`ctk sandbox`)", False, _pm("bubblewrap")),
+    Dependency("gh", "GitHub workflows (PRs, CI)", False, _pm("github-cli", "gh", "gh", "gh", "GitHub.cli")),
+    Dependency(
+        "ffmpeg", "audio checks (`ctk audiocheck`) and desktop captures", False, _pm("ffmpeg", winget="Gyan.FFmpeg")
+    ),
+    Dependency("bwrap", "sandbox for untrusted code (`ctk sandbox`)", False, _pm("bubblewrap"), systems=("linux",)),
     Dependency(
         "Xvfb",
         "headless desktop and Godot screenshots (`ctk shoot`)",
         False,
         _pm("xorg-server-xvfb", "xvfb", "xorg-x11-server-Xvfb", "--cask xquartz"),
+        systems=("linux", "darwin"),
     ),
-    Dependency("gitleaks", "secret scanning before commits (`secrets` hook)", False, _pm("gitleaks")),
+    Dependency(
+        "gitleaks",
+        "secret scanning before commits (`secrets` hook)",
+        False,
+        _pm("gitleaks", winget="Gitleaks.Gitleaks"),
+    ),
 )
 
 
@@ -362,7 +379,7 @@ def check_toolkit(host: Host | None = None) -> Report:
     else:
         report.add("ok", "python3", f"python {_fmt(python)}")
     for dep in TOOLKIT_DEPENDENCIES:
-        if not dep.shipped:
+        if not dep.shipped or not dep.applies(host):
             continue
         if which(dep.command):
             report.add("ok", dep.command, dep.purpose)

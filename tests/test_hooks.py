@@ -343,3 +343,15 @@ def test_continuity_brings_back_branch_checks_and_handoff(tmp_path, monkeypatch)
     assert out["hookSpecificOutput"]["hookEventName"] == "SessionStart"
     assert "branch feat/x" in text and "finish the parser" in text and "written just now" in text
     assert "~ stale" in text, "the handoff file itself changed the tree after the check ran"
+
+
+def test_notify_on_windows_passes_the_text_through_the_environment(monkeypatch):
+    calls = []
+    monkeypatch.setattr(notify.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(notify.shutil, "which", lambda name: f"C:/Windows/{name}.exe")
+    monkeypatch.setattr(notify.subprocess, "run", lambda command, **kw: calls.append((command, kw["env"])))
+    title, body = "Claude Code", "done'; Remove-Item -Recurse C:\\ #"
+    assert notify.send(title, body)
+    (command, env), *_ = calls
+    assert command[0] == "powershell" and body not in " ".join(command), "the text never becomes script"
+    assert env["CTK_NOTIFY_TITLE"] == title and env["CTK_NOTIFY_BODY"] == body

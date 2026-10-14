@@ -35,9 +35,17 @@ relay: open a new konsole window in /home/me/project running:
 ## Terminal
 
 The terminal Claude Code runs in, recognised from its environment: tmux
-(`TMUX`), konsole, kitty, alacritty, wezterm, ghostty or gnome-terminal. Otherwise
-the first installed of konsole, alacritty, kitty, gnome-terminal, wezterm,
-ghostty, foot and xterm, when a display is available. If none is found, or the
+(`TMUX`), konsole, kitty, alacritty, wezterm, ghostty, gnome-terminal, iTerm2
+and Terminal (`TERM_PROGRAM`) or Windows Terminal (`WT_SESSION`). Otherwise
+the system's usual one: on Linux the first installed of konsole, alacritty,
+kitty, gnome-terminal, wezterm, ghostty, foot and xterm, when a display is
+available; on macOS Terminal; on Windows Windows Terminal, else a new
+PowerShell console.
+
+Terminal, iTerm2 and Windows Terminal start the new session from their own
+process, so it does not inherit the environment: the command sets `CTK_RELAY`
+itself (`env …` in a shell on macOS, a PowerShell `-EncodedCommand` on
+Windows). macOS asks once to allow automation of Terminal or iTerm2. If none is found, or the
 terminal fails to start, nothing is locked and Claude asks the user to type
 `/clear`: `continuity` also runs after `/clear`, so the same session continues
 from the handoff with an empty window.

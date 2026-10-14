@@ -180,7 +180,8 @@ filter the output. Once per command name, at most `max-per-session` times.
 
 ## `notify`
 
-Sends a desktop notification (`notify-send` on Linux, `osascript` on macOS)
+Sends a desktop notification (`notify-send` on Linux, `osascript` on macOS, a
+PowerShell toast on Windows)
 when Claude Code needs permission or has been idle waiting for input, and when
 a turn that took at least `min-seconds` ends. At most one notification per
 minute across all sessions.

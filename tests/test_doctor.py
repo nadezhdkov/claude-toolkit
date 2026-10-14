@@ -103,3 +103,12 @@ def test_toolkit_check_marks_required_and_optional(monkeypatch, versions):
     assert by_check["bwrap"].level == "warn"
     assert "future-tool" not in by_check, "dependencies of unreleased tools stay silent"
     assert report.errors == 1
+
+
+def test_toolkit_check_on_windows_uses_winget_and_skips_linux_tools(monkeypatch, versions):
+    versions["python"] = (3, 12, 0)
+    monkeypatch.setattr(doctor, "which", lambda name: None if name in ("gh", "bwrap", "Xvfb") else f"C:/bin/{name}")
+    report = doctor.check_toolkit(doctor.Host("windows", "windows"))
+    by_check = {f.check: f for f in report.findings}
+    assert by_check["gh"].fix == "winget install --id GitHub.cli -e"
+    assert "bwrap" not in by_check and "Xvfb" not in by_check, "Linux-only tools are not missing on Windows"

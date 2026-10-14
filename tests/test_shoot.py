@@ -256,4 +256,5 @@ def test_desktop_without_xvfb_explains_what_is_missing(tmp_path, monkeypatch, ca
     real_which = shutil.which
     monkeypatch.setattr(shoot.shutil, "which", lambda name: None if name == "Xvfb" else real_which(name))
     assert cli.main(["shoot", "desktop", "-o", str(tmp_path / "d.png"), "--", "sleep", "1"]) == 1
-    assert "Xvfb is not installed" in capsys.readouterr().err
+    expected = "needs an X server" if os.name == "nt" else "Xvfb is not installed"
+    assert expected in capsys.readouterr().err

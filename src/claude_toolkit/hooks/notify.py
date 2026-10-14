@@ -6,11 +6,13 @@
 - Stop: notifies when the turn took at least ``min-seconds`` (default 60).
 
 At most one notification per minute across all sessions. Uses ``notify-send``
-on Linux and ``osascript`` on macOS; does nothing when neither exists.
+on Linux, ``osascript`` on macOS and a PowerShell toast on Windows; does
+nothing when none exists.
 """
 
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 import subprocess
@@ -37,16 +39,36 @@ def _quote(text: str) -> str:
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+# Windows toast through PowerShell's own registered app id. The text comes from the
+# environment, never from the script, so nothing in it can run as code.
+WINDOWS_TOAST = (
+    "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]"
+    " > $null; "
+    "$xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent("
+    "[Windows.UI.Notifications.ToastTemplateType]::ToastText02); "
+    "$text = $xml.GetElementsByTagName('text'); "
+    "$text.Item(0).AppendChild($xml.CreateTextNode($env:CTK_NOTIFY_TITLE)) > $null; "
+    "$text.Item(1).AppendChild($xml.CreateTextNode($env:CTK_NOTIFY_BODY)) > $null; "
+    "$app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'; "
+    "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($app).Show("
+    "[Windows.UI.Notifications.ToastNotification]::new($xml))"
+)
+
+
 def send(title: str, body: str) -> bool:
     """Show a desktop notification; False when no notifier is available."""
-    if platform.system() == "Darwin" and shutil.which("osascript"):
+    env = None
+    if platform.system() == "Windows" and shutil.which("powershell"):
+        command = ["powershell", "-NoProfile", "-NonInteractive", "-Command", WINDOWS_TOAST]
+        env = {**os.environ, "CTK_NOTIFY_TITLE": title, "CTK_NOTIFY_BODY": body}
+    elif platform.system() == "Darwin" and shutil.which("osascript"):
         command = ["osascript", "-e", f"display notification {_quote(body)} with title {_quote(title)}"]
     elif shutil.which("notify-send"):
         command = ["notify-send", "--app-name=Claude Code", title, body]
     else:
         return False
     try:
-        subprocess.run(command, capture_output=True, timeout=5, check=False)
+        subprocess.run(command, capture_output=True, timeout=10, check=False, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return False
     return True

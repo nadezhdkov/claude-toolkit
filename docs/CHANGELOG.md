@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal, else
+  a new PowerShell console); the `notify` hook on Windows (a toast, with the
+  text passed through the environment); `ctk doctor --toolkit` install hints
+  for winget, and no missing-tool warnings for `bwrap` outside Linux or
+  `Xvfb` on Windows.
 - `install.ps1`: the Windows installer, with the same plan, questions and
   exit codes as `install.sh`. The plugin's `ctk` launcher finds Python as
   `python3`, `python` or `py -3` and an installed `ctk.exe`, and CI installs
