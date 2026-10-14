@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `.agents/skills/`: a copy of the skills (`debug`, `ship`, `handoff`, `onboard-repo`, `visual-qa`,
+  `security-pass` and the project's `issue`) in the open `SKILL.md` layout, so agents other than
+  Claude Code can use them. `make skills` generates it from `plugin/skills/` and `.claude/skills/`,
+  and a test fails when it is out of date. `orchestrate` stays Claude Code only.
 - Release automation ([docs/releasing.md](releasing.md)): `scripts/release.py` picks the next
   version from the Conventional Commits since the last tag, writes it into
   `pyproject.toml`, `__init__.py`, `uv.lock` and the plugin manifest, and cuts the

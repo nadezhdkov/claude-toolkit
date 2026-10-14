@@ -2,7 +2,7 @@
 # Needs make and uv; on Windows use the uv commands directly (or make from Git for Windows/MSYS2).
 
 .DEFAULT_GOAL := help
-.PHONY: help sync lint format test check shellcheck actions ci screenshots install version release
+.PHONY: help sync lint format test check shellcheck actions ci screenshots install version release skills
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-12s %s\n", $$1, $$2}'
@@ -43,3 +43,6 @@ version: ## the version, what the commits since the last tag would release, and 
 
 release: ## open the release pull request: next version, version files and changelog (asks first)
 	python3 scripts/release.py pr
+
+skills: ## regenerate .agents/skills from plugin/skills and .claude/skills
+	python3 scripts/sync_agent_skills.py
