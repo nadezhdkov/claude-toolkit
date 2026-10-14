@@ -1,6 +1,6 @@
 {
   "name": "ctk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Hooks, process skills and subagents for Claude Code: formatting, affected tests, destructive-command guard, secret scanning, notifications; debug, ship, handoff, onboard-repo, visual-qa, security-pass and orchestrate skills; reviewer, researcher and test-runner agents with enforced output contracts. Requires the `ctk` command.",
   "author": {
     "name": "nadezhdkov"

@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-14
+
 ### Added
 
 - `ctk setup` for agents other than Claude Code: it copies the process skills to `~/.agents/skills/`
@@ -68,6 +70,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `ctk sessions` reports the window growth per call and the relay point: the
   window size at which a fresh session would have cost least, and what it
   saves.
+- Benchmark case `relay-resume`: a feature left half done by an earlier session (a handoff file with
+  decisions that are not in the code, one uncommitted edit), resumed in a fresh session with
+  "continue from where the last session stopped". The case sets `CTK_RELAY=1`, so the with arm gets the
+  state from the `continuity` hook and the without arm has to find it. Three deterministic checks
+  (the feature works, the decisions hold, the earlier work is intact); `tests/test_benchmark_relay.py`
+  proves them without Claude. The runner now honours a case's `env` key, as `claude plugin eval` does.
 
 ### Changed
 
@@ -83,6 +91,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Roadmap: Phase 7 is closed. `ctk recall` is not built because the
   transcripts show no missing search (5 repeated searches in 1,944, none
   repeated after a compaction); Phase 8 re-checks it.
+- The changelog is now written in fragments: a pull request adds `docs/changelog.d/<slug>.<category>.md`
+  instead of editing `docs/CHANGELOG.md`, so two open pull requests no longer conflict at the top of
+  `[Unreleased]`. `make release` folds the fragments into the new version's sections and deletes them;
+  `make changelog` previews the result; the `Changelog` check accepts a fragment or the old edit; and
+  `scripts/release.py check` reports a fragment that would be ignored. Entries already in `[Unreleased]`
+  are kept.
+
+### Fixed
+
+- `scripts/release.py check`, which CI and the `Release` workflow run, now refuses a changelog or a fragment that still holds merge conflict markers, so a half-resolved merge cannot reach the release notes.
 
 ## [0.3.0] - 2026-10-13
 
@@ -261,7 +279,8 @@ always-on context was halved).
   Dependabot for SHA-pinned Actions.
 - Documentation in `docs/` and contribution guides.
 
-[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nadezhdkov/claude-toolkit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nadezhdkov/claude-toolkit/releases/tag/v0.1.0
