@@ -14,6 +14,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   changelog. `make version` shows it, `make release` opens the release pull request, and the
   `Release` workflow tags and publishes the GitHub release when that pull request is merged.
   An optional `Release PR` workflow does the first step on its own when a `RELEASE_TOKEN` secret exists.
+- Translations of the README and the installation guide into Português (Brasil),
+  Español, Deutsch and 简体中文 in `docs/i18n/`, with a language switcher in
+  both English pages. `tests/test_i18n.py` keeps them in step with the English
+  text (headings, tables, untranslated code blocks, links and anchors).
 - `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal, else
   a new PowerShell console); the `notify` hook on Windows (a toast, with the
   text passed through the environment); `ctk doctor --toolkit` install hints

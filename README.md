@@ -19,6 +19,8 @@
 
 [Why](#why) · [Install](#install) · [Commands](#commands) · [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Contributing](CONTRIBUTING.md)
 
+**Languages:** **English** · [Português (Brasil)](docs/i18n/pt-BR/README.md) · [Español](docs/i18n/es/README.md) · [Deutsch](docs/i18n/de/README.md) · [简体中文](docs/i18n/zh-CN/README.md)
+
 </div>
 
 ---
