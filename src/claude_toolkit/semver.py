@@ -1,8 +1,9 @@
 """Just enough npm-style range matching to check toolchain pins.
 
 Supports exact versions, partial versions (``24``, ``24.11``), ``x``/``*``
-wildcards, ``^``, ``~``, comparison operators, space-separated AND and ``||``.
-Anything else is reported as unsupported instead of guessed.
+wildcards, ``^``, ``~``, comparison operators, hyphen ranges (``1.2.3 - 2.3.4``),
+space-separated AND and ``||``. Anything else is reported as unsupported instead
+of guessed.
 """
 
 from __future__ import annotations
@@ -46,7 +47,18 @@ def _bounds(op: str, parts: list[int | None]) -> list[tuple[str, Version]]:
         if minor is None:
             return [(">=", low), ("<", (major + 1, 0, 0))]
         return [(">=", low), ("<", (major, minor + 1, 0))]
+    if op in (">", "<=") and patch is None:
+        # A partial version is a whole range: ">1.2" is above all of 1.2.x,
+        # "<=1.2" includes all of it.
+        after: Version = (major + 1, 0, 0) if minor is None else (major, minor + 1, 0)
+        return [(">=" if op == ">" else "<", after)]
     return [(op, low)]
+
+
+def _is_plain_version(token: str) -> bool:
+    """A hyphen-range bound: a version without operator whose major is a number."""
+    match = _COMPARATOR.match(token)
+    return bool(match) and match.group(1) is None and match.group(2) not in ("x", "X", "*")
 
 
 def _check(version: Version, op: str, bound: Version) -> bool:
@@ -75,8 +87,22 @@ def satisfies(version: Version, spec: str) -> bool:
                 merged.append(token)
         if not merged:
             return True
+        # A hyphen range "A - B" is ">=A <=B"; _bounds gives a partial B its npm meaning.
+        expanded: list[str] = []
+        i = 0
+        while i < len(merged):
+            if merged[i] == "-":
+                raise UnsupportedRange(spec)
+            if i + 1 < len(merged) and merged[i + 1] == "-":
+                if i + 2 >= len(merged) or not all(_is_plain_version(t) for t in (merged[i], merged[i + 2])):
+                    raise UnsupportedRange(spec)
+                expanded += [">=" + merged[i], "<=" + merged[i + 2]]
+                i += 3
+            else:
+                expanded.append(merged[i])
+                i += 1
         ok = True
-        for token in merged:
+        for token in expanded:
             match = _COMPARATOR.match(token)
             if not match:
                 raise UnsupportedRange(spec)
