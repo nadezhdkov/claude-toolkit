@@ -33,6 +33,9 @@ Or `make ci` for all of it (`make` lists the shortcuts: `lint`, `format`,
 - **Add a changelog entry** under `## [Unreleased]` in
   [docs/CHANGELOG.md](docs/CHANGELOG.md). CI/docs-only changes can get the
   `skip-changelog` label from a maintainer instead.
+- **Don't touch version numbers.** Maintainers run `make release`
+  ([docs/releasing.md](docs/releasing.md)); the next version comes from your PR title, so
+  `feat:` and `fix:` matter.
 - **Title the PR with [Conventional Commits](https://www.conventionalcommits.org/)**,
   e.g. `feat: add ctk audiocheck` or `fix(runq): recognise vitest 4 summary`.
 

@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Release automation ([docs/releasing.md](releasing.md)): `scripts/release.py` picks the next
+  version from the Conventional Commits since the last tag, writes it into
+  `pyproject.toml`, `__init__.py`, `uv.lock` and the plugin manifest, and cuts the
+  changelog. `make version` shows it, `make release` opens the release pull request, and the
+  `Release` workflow tags and publishes the GitHub release when that pull request is merged.
+  An optional `Release PR` workflow does the first step on its own when a `RELEASE_TOKEN` secret exists.
 - Translations of the README and the installation guide into Português (Brasil),
   Español, Deutsch and 简体中文 in `docs/i18n/`, with a language switcher in
   both English pages. `tests/test_i18n.py` keeps them in step with the English
