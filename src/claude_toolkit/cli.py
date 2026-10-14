@@ -34,6 +34,8 @@ def _sessions(args: argparse.Namespace) -> int:
     from .style import Spinner
 
     root = Path(args.root).expanduser() if args.root else sessions.default_root()
+    if args.compare:
+        return _sessions_compare(args, root)
     paths = sessions.find_sessions(root, args.since, include_subagents=not args.no_subagents)
     with Spinner(f"reading {len(paths)} transcripts"):
         parsed = [sessions.parse_session(path) for path in paths]
@@ -53,6 +55,29 @@ def _sessions(args: argparse.Namespace) -> int:
         label += f" · project contains {args.project!r}"
     print(json.dumps(asdict(summary), indent=2) if args.json else sessions.render(summary, label))
     return 0
+
+
+def _sessions_compare(args: argparse.Namespace, root: Path) -> int:
+    import time
+
+    from . import sessions
+    from .style import Spinner
+
+    try:
+        periods = [sessions.parse_period(text) for text in args.compare]
+    except ValueError as error:
+        print(f"sessions: {error}", file=sys.stderr)
+        return 2
+    oldest_days = (time.time() - min(start for start, _ in periods)) / 86400
+    paths = sessions.find_sessions(root, max(oldest_days, 0), include_subagents=not args.no_subagents)
+    with Spinner(f"reading {len(paths)} transcripts"):
+        parsed = [sessions.parse_session(path) for path in paths]
+    if args.project:
+        parsed = [s for s in parsed if s.project and args.project in s.project]
+    summaries = [sessions.summarise(sessions.in_period(parsed, period)) for period in periods]
+    result = sessions.compare(*summaries, labels=tuple(args.compare))
+    print(json.dumps(asdict(result), indent=2) if args.json else sessions.render_comparison(result))
+    return 0 if result.verdict == "pass" else 1
 
 
 def _lsp(args: argparse.Namespace) -> int:
@@ -205,6 +230,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project", metavar="TEXT", help="only sessions whose working directory contains TEXT")
     p.add_argument("--no-subagents", action="store_true", help="ignore subagent transcripts")
     p.add_argument("--csv", metavar="FILE", help="write weekly metrics as CSV ('-' for stdout)")
+    p.add_argument(
+        "--compare",
+        nargs=2,
+        metavar=("BASELINE", "CURRENT"),
+        help="compare two periods, START..END each (dates, or Nd days ago); exit 0 when the Phase 8 criterion is met",
+    )
     p.add_argument("--json", action="store_true")
     p.add_argument("--root", help=argparse.SUPPRESS)
     p.set_defaults(func=_sessions)

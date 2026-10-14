@@ -112,7 +112,7 @@ and safe to start, so the work moves on to it with only what matters.
 
 Done when, over a week of real use, the median peak window and the Bash
 re-read cost have both fallen by at least half, and the benchmark scores have
-not dropped. The same week re-checks whether search is missing (the
+not dropped (`ctk sessions --compare` gives the first verdict). The same week re-checks whether search is missing (the
 `ctk recall` question closed in Phase 7).
 
 ## 🚧 Phase 9 — Windows and macOS
