@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk setup` for agents other than Claude Code: it copies the process skills to `~/.agents/skills/`
+  (offered when Codex, Gemini CLI or opencode is found, or with `--agents`; it never replaces or
+  removes a folder it did not write, and leaves out the project-only `issue` skill), and
+  `--agents-file FILE` adds the short `ctk` section, without the Claude-only hooks sentence, to a
+  global instructions file you name. Both are undone by `--uninstall`. The skills ship inside the wheel.
 - PyPI packaging: complete metadata (classifiers, URLs, license file), a README whose relative
   links and images become absolute on the PyPI page, and a source distribution limited to the package
   and its tests. `CI / Package` builds both files, runs `twine check --strict` and smoke-tests the

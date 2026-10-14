@@ -53,6 +53,7 @@ def test_install_hint_prefers_the_host_package_manager(monkeypatch):
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     monkeypatch.setattr(setup, "claude_home", lambda: tmp_path)
+    monkeypatch.setattr(setup, "agent_home", lambda: tmp_path / "other-agents-home")
     monkeypatch.setattr(setup, "TOOLKIT_DEPENDENCIES", ())
     monkeypatch.setattr(setup, "claude_cli", lambda: None)
     return tmp_path

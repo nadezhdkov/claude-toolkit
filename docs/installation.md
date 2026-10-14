@@ -40,6 +40,7 @@ confirm it:
 | Claude Code instructions | Adds (or refreshes) a short section between `<!-- claude-toolkit:start -->` and `<!-- claude-toolkit:end -->` at the end of `~/.claude/CLAUDE.md`, so Claude Code knows when to use each `ctk` command. The previous file is backed up to `~/.claude/backups/claude-toolkit/`. | `ctk setup --uninstall` |
 | Hooks plugin | Registers this repository as the `ctk` plugin marketplace and installs the `ctk` plugin (`claude plugin marketplace add`, `claude plugin install ctk@ctk`). See [hooks](commands/hooks.md). | `ctk setup --uninstall` |
 | Optional dependencies | Offers to install missing tools listed by `ctk doctor --toolkit` (for example `gitleaks`, `Xvfb`) with your distribution's package manager. | your package manager |
+| Other agents (optional) | When Codex, Gemini CLI or opencode is found, or with `--agents`: copies the process skills to `~/.agents/skills/` (never over a skill of yours). `--agents-file FILE` adds the same short section to a global instructions file you name. | `ctk setup --uninstall` (add `--agents-file FILE` again for the file) |
 
 Running `ctk setup` again is safe: it only proposes what is missing or outdated.
 
