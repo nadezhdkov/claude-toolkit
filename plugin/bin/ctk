@@ -6,15 +6,22 @@
 self=$(readlink -f "$0" 2>/dev/null || echo "$0")
 src="$(dirname "$self")/../../src"
 if [ -f "$src/claude_toolkit/cli.py" ]; then
-  PYTHONPATH="$src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m claude_toolkit.cli "$@"
+  # python3 on Linux and macOS; Windows (Git Bash) usually has python or the py launcher.
+  for python in python3 python "py -3"; do
+    # shellcheck disable=SC2086 # "py -3" is a command and an argument
+    if $python -c 'import sys; sys.exit(sys.version_info < (3, 11))' >/dev/null 2>&1; then
+      PYTHONPATH="$src${PYTHONPATH:+:$PYTHONPATH}" exec $python -m claude_toolkit.cli "$@"
+    fi
+  done
 fi
 # A plugin copied without its repository: hand over to another ctk on PATH.
 IFS=:
 for dir in $PATH; do
-  candidate="$dir/ctk"
-  if [ -x "$candidate" ] && [ "$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")" != "$self" ]; then
-    exec "$candidate" "$@"
-  fi
+  for candidate in "$dir/ctk" "$dir/ctk.exe"; do
+    if [ -x "$candidate" ] && [ "$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")" != "$self" ]; then
+      exec "$candidate" "$@"
+    fi
+  done
 done
 echo "ctk: not installed (see https://github.com/nadezhdkov/claude-toolkit#install)" >&2
 exit 127

@@ -112,3 +112,48 @@ jobs:
           ctk runq -- python3 -c "print('hello from runq')"
           ctk setup --dry-run
           ctk sessions --since 1
+
+  install-os:
+    name: Install (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+      - name: Installer dry run and confirmation without a terminal (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./install.ps1 -DryRun
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $null | pwsh -NoProfile -File ./install.ps1
+          if ($LASTEXITCODE -ne 3) { Write-Error "expected exit 3, got $LASTEXITCODE"; exit 1 }
+          exit 0
+      - name: Installer dry run (macOS)
+        if: runner.os == 'macOS'
+        run: ./install.sh --dry-run
+      - name: Install ctk as a uv tool
+        shell: bash
+        run: |
+          uv tool install --editable .
+          uv tool dir --bin >> "$GITHUB_PATH"
+      - name: Smoke-test the commands and the plugin launcher (Git Bash on Windows)
+        shell: bash
+        run: |
+          ctk --version
+          uv sync
+          ctk doctor .
+          ctk runq -- git --version
+          ctk setup --dry-run
+          ctk map . --budget 20
+          ctk verify || test $? -eq 1
+          plugin/bin/ctk --version
+          echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}' | ctk hook guard-destructive
+

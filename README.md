@@ -48,7 +48,7 @@ Claude Code get compact plain text. `NO_COLOR` turns colour off and
 
 ## Install
 
-Requirements: Linux or macOS, `git`, and [uv](https://docs.astral.sh/uv/)
+Requirements: Linux, macOS or Windows (with Git Bash), `git`, and [uv](https://docs.astral.sh/uv/)
 (the installer offers to install uv if it is missing). The `ctk` command has no
 runtime dependencies beyond Python 3.11+.
 
@@ -57,6 +57,8 @@ git clone https://github.com/nadezhdkov/claude-toolkit.git
 cd claude-toolkit
 ./install.sh            # shows the plan, asks before each step
 ```
+
+On Windows, in PowerShell: `.\install.ps1` (same plan and questions; `-Yes`, `-DryRun`).
 
 The installer runs `uv tool install --editable .` (so `git pull` updates
 `ctk`) and then `ctk setup`, which adds a short section to
