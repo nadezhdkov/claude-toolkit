@@ -272,3 +272,18 @@ def test_the_pull_request_check_accepts_a_fragment():
     assert "docs/changelog.d/" in workflow and "docs/CHANGELOG.md" in workflow
     for category in release.CATEGORIES:
         assert category in workflow
+
+
+def test_conflict_markers_in_the_changelog_or_a_fragment_are_reported(repo):
+    assert release.check(repo) == []
+    fragment(repo, "ok.added.md", "- fine")
+    assert release.check(repo) == []
+    fragment(repo, "bad.added.md", "<<<<<<< HEAD\n- mine\n=======\n- theirs\n>>>>>>> origin/main\n")
+    assert release.check(repo) == ["docs/changelog.d/bad.added.md has merge conflict markers"]
+    (repo / "docs/changelog.d/bad.added.md").unlink()
+    text = (repo / "docs/CHANGELOG.md").read_text(encoding="utf-8")
+    (repo / "docs/CHANGELOG.md").write_text(
+        text.replace("- a new thing", "<<<<<<< HEAD\n- a new thing\n>>>>>>> main"), encoding="utf-8"
+    )
+    assert release.check(repo) == ["docs/CHANGELOG.md has merge conflict markers"]
+    assert release.main(["--root", str(repo), "check"]) == 1
