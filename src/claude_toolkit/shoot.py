@@ -333,7 +333,9 @@ def _grab_display(display: str, size: tuple[int, int], out: Path) -> None:
         command += ["-i", display, "-frames:v", "1", str(out)]
     else:
         raise ShootError("capturing a display needs ImageMagick (`import`) or ffmpeg")
-    done = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)
+    done = subprocess.run(
+        command, capture_output=True, text=True, timeout=30, check=False, encoding="utf-8", errors="replace"
+    )
     if done.returncode != 0 or not out.exists():
         raise ShootError(f"screen grab failed: {(done.stderr or done.stdout).strip()[:300]}")
 
@@ -394,7 +396,9 @@ def _viewport_override(project: Path, size: tuple[int, int] | None) -> Iterator[
     override = project / "override.cfg"
     if override.exists():
         raise ShootError(f"{override} already exists; drop --size to use the project's own size")
-    override.write_text(f"[display]\n\nwindow/size/viewport_width={size[0]}\nwindow/size/viewport_height={size[1]}\n")
+    override.write_text(
+        f"[display]\n\nwindow/size/viewport_width={size[0]}\nwindow/size/viewport_height={size[1]}\n", encoding="utf-8"
+    )
     try:
         yield
     finally:
@@ -430,7 +434,16 @@ def capture_godot(
                 env["DISPLAY"] = stack.enter_context(virtual_display(size or (1920, 1080)))
                 env.pop("WAYLAND_DISPLAY", None)
             try:
-                done = subprocess.run(command, env=env, capture_output=True, text=True, timeout=timeout, check=False)
+                done = subprocess.run(
+                    command,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    check=False,
+                    encoding="utf-8",
+                    errors="replace",
+                )
             except subprocess.TimeoutExpired as expired:
                 raise ShootError(f"Godot did not quit within {timeout:g}s") from expired
         written = sorted(Path(tmp).glob("frame*.png"))
@@ -468,6 +481,8 @@ def _run_web(options: dict) -> subprocess.CompletedProcess:
         text=True,
         timeout=options["timeout"] + 120,
         check=False,
+        encoding="utf-8",
+        errors="replace",
     )
 
 

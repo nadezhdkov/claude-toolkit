@@ -143,6 +143,8 @@ def git_root(path: Path) -> Path | None:
             text=True,
             timeout=5,
             check=False,
+            encoding="utf-8",
+            errors="replace",
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -175,7 +177,7 @@ class State:
 
     def load(self) -> dict[str, Any]:
         try:
-            data = json.loads(self.path.read_text())
+            data = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return {}
         return data if isinstance(data, dict) else {}
@@ -183,7 +185,7 @@ class State:
     def save(self, data: dict[str, Any]) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(f".{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(data))
+        tmp.write_text(json.dumps(data), encoding="utf-8")
         tmp.replace(self.path)
         self._prune()
 

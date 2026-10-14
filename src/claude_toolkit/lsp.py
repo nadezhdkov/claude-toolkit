@@ -128,7 +128,7 @@ def project_files(root: Path, limit: int = 50_000) -> list[str]:
             if entry.is_dir() and entry.name not in SKIP_DIRS and not entry.is_symlink():
                 stack.append(entry)
             elif entry.is_file():
-                found.append(str(entry.relative_to(root)))
+                found.append(entry.relative_to(root).as_posix())
     return found
 
 
@@ -147,12 +147,12 @@ def installed_plugins(claude_home: Path | None = None) -> set[str]:
     home = claude_home or Path.home() / ".claude"
     names: set[str] = set()
     try:
-        data = json.loads((home / "plugins" / "installed_plugins.json").read_text())
+        data = json.loads((home / "plugins" / "installed_plugins.json").read_text(encoding="utf-8"))
         names.update(key.split("@")[0] for key in data.get("plugins", {}))
     except (OSError, json.JSONDecodeError):
         pass
     try:
-        enabled = json.loads((home / "settings.json").read_text()).get("enabledPlugins", {})
+        enabled = json.loads((home / "settings.json").read_text(encoding="utf-8")).get("enabledPlugins", {})
         for key, on in enabled.items():
             name = key.split("@")[0]
             if on:

@@ -225,13 +225,13 @@ def build(root: Path) -> RepoMap:
     for path in files:
         relative = path.relative_to(root)
         kind = kind_of(relative)
-        directory = str(relative.parent)
+        directory = relative.parent.as_posix()
         if kind in ("source", "test"):
             text = _read(path)
             if text is not None:
                 seen_in.update(set(WORD.findall(text)))
                 if kind == "source":
-                    entries.append(FileEntry(str(relative), symbols_for(path, text)))
+                    entries.append(FileEntry(relative.as_posix(), symbols_for(path, text)))
                     continue
         others.append((directory, {"test": "tests", "doc": "docs"}.get(kind, "other")))
     source_dirs = {str(Path(e.path).parent) for e in entries}
@@ -345,7 +345,7 @@ def find_uses(root: Path, name: str) -> list[Use]:
             if word.search(line):
                 is_definition = kind in ("source", "test") and definition.search(line)
                 uses.append(
-                    Use(str(relative), number, _short(line.strip(), 110), "definition" if is_definition else kind)
+                    Use(relative.as_posix(), number, _short(line.strip(), 110), "definition" if is_definition else kind)
                 )
     order = {"definition": 0, "source": 1, "test": 2, "doc": 3, "other": 4}
     return sorted(uses, key=lambda u: (order[u.kind], u.path, u.line))
@@ -367,7 +367,7 @@ def render_uses(root: Path, name: str, uses: list[Use]) -> str:
         from .hooks.affected_tests import python_tests
 
         mapped = python_tests([root / p for p in defined], root)
-        tests = sorted(set(tests) | {str(t.relative_to(root)) for t in mapped})
+        tests = sorted(set(tests) | {t.relative_to(root).as_posix() for t in mapped})
     lines.append("tests: " + (", ".join(tests) if tests else "none reference it"))
     return "\n".join(lines)
 

@@ -111,7 +111,9 @@ def main() -> None:
     if args[:1] == ["--"]:
         args = args[1:]
     env = {**os.environ, "FORCE_COLOR": "1", "COLORTERM": "truecolor", "COLUMNS": "100"}
-    done = subprocess.run(args, capture_output=True, text=True, env=env, check=False)
+    done = subprocess.run(
+        args, capture_output=True, text=True, env=env, check=False, encoding="utf-8", errors="replace"
+    )
     with open(out, "w", encoding="utf-8") as handle:
         handle.write(render(done.stdout + done.stderr, title))
 

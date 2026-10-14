@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from dataclasses import asdict
@@ -43,7 +44,7 @@ def _sessions(args: argparse.Namespace) -> int:
         if args.csv == "-":
             print(text, end="")
         else:
-            Path(args.csv).write_text(text)
+            Path(args.csv).write_text(text, encoding="utf-8")
             print(f"wrote {args.csv}")
         return 0
     summary = sessions.summarise(parsed)
@@ -350,7 +351,17 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _utf8_output() -> None:
+    """Windows consoles and pipes default to a legacy code page that cannot print ✓, → or ·."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure and (getattr(stream, "encoding", "") or "").lower().replace("-", "") != "utf8":
+            with contextlib.suppress(OSError, ValueError):
+                reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_output()
     args = build_parser().parse_args(argv)
     if args.name is None:
         print(overview())

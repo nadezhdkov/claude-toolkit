@@ -86,7 +86,7 @@ def parse_memory(text: str) -> int:
 def total_memory() -> int | None:
     """Physical memory in bytes, from /proc/meminfo."""
     try:
-        for line in Path("/proc/meminfo").read_text().splitlines():
+        for line in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
             if line.startswith("MemTotal:"):
                 return int(line.split()[1]) * 1024
     except (OSError, ValueError, IndexError):
@@ -119,7 +119,15 @@ def bwrap_supports_size() -> bool:
     if not bwrap:
         return False
     try:
-        done = subprocess.run([bwrap, "--help"], capture_output=True, text=True, timeout=5, check=False)
+        done = subprocess.run(
+            [bwrap, "--help"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
     except (OSError, subprocess.TimeoutExpired):
         return False
     return "--size" in done.stdout + done.stderr
@@ -244,7 +252,13 @@ def preflight() -> None:
     if not bwrap:
         raise SandboxError(f"bubblewrap (bwrap) is not installed: {install_hint()}")
     done = subprocess.run(
-        [bwrap, "--unshare-all", "--ro-bind", "/", "/", "true"], capture_output=True, text=True, timeout=10, check=False
+        [bwrap, "--unshare-all", "--ro-bind", "/", "/", "true"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
     )
     if done.returncode != 0:
         detail = done.stderr.strip().splitlines()[-1] if done.stderr.strip() else f"exit {done.returncode}"

@@ -69,7 +69,7 @@ def _fmt(version: tuple[int, ...] | None) -> str:
 
 def _read(path: Path) -> str | None:
     try:
-        return path.read_text(errors="replace")
+        return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
 
@@ -91,7 +91,7 @@ def check_node(root: Path, report: Report) -> None:
     manifest: dict = {}
     if package.exists():
         try:
-            manifest = json.loads(package.read_text())
+            manifest = json.loads(package.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             report.add("error", "package.json", f"package.json is not valid JSON: {error}")
     engines = manifest.get("engines", {}) if isinstance(manifest.get("engines"), dict) else {}
@@ -186,7 +186,7 @@ def check_python(root: Path, report: Report) -> None:
     data: dict = {}
     if pyproject.exists():
         try:
-            data = tomllib.loads(pyproject.read_text())
+            data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
         except (OSError, tomllib.TOMLDecodeError) as error:
             report.add("error", "pyproject.toml", f"pyproject.toml is not valid TOML: {error}")
     requires = (data.get("project") or {}).get("requires-python")
@@ -252,7 +252,7 @@ def check_rust(root: Path, report: Report) -> None:
     toml_file = root / "rust-toolchain.toml"
     if toml_file.exists():
         try:
-            channel = tomllib.loads(toml_file.read_text()).get("toolchain", {}).get("channel")
+            channel = tomllib.loads(toml_file.read_text(encoding="utf-8")).get("toolchain", {}).get("channel")
         except (OSError, tomllib.TOMLDecodeError):
             report.add("warn", "rust", "rust-toolchain.toml is not valid TOML")
     elif (root / "rust-toolchain").exists():

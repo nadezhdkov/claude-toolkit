@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from conftest import posix_only
 
 from claude_toolkit import __version__, cli, hooks
 from claude_toolkit.hooks import affected_tests, base, format_file, guard, notify, secrets, shell
@@ -173,6 +174,7 @@ exit 1
 """
 
 
+@posix_only
 def test_commit_with_a_secret_is_denied_without_showing_it(tmp_path, monkeypatch):
     repo = git_repo(tmp_path / "repo")
     bin_dir = tmp_path / "bin"
@@ -213,6 +215,7 @@ def edit(cwd: Path, file: Path) -> str:
     return payload("PostToolUse", cwd, tool_name="Edit", tool_input={"file_path": str(file)})
 
 
+@posix_only
 def test_formats_only_with_a_configured_formatter(tmp_path):
     project = make_ruff_project(tmp_path / "p")
     assert hooks.dispatch("format-file", edit(project, project / "mod.py")).stdout == ""
@@ -230,6 +233,7 @@ def test_never_formats_outside_the_project(tmp_path):
     assert other.read_text() == "x=1\n"
 
 
+@posix_only
 def test_formatter_failure_is_reported_to_claude(tmp_path):
     project = make_ruff_project(tmp_path / "p")
     (project / ".venv" / "bin" / "ruff").write_text("#!/bin/sh\necho 'error: invalid syntax at 1:3' >&2\nexit 2\n")

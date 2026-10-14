@@ -157,7 +157,15 @@ def release(session_id: str) -> None:
 
 def _git(root: Path, *args: str) -> str:
     try:
-        done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, timeout=10, check=False)
+        done = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
     except (OSError, subprocess.TimeoutExpired):
         return ""
     return done.stdout.strip() if done.returncode == 0 else ""

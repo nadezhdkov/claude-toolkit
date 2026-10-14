@@ -63,8 +63,8 @@ def expand(word: str, cwd: Path) -> Path | None:
     home = str(Path.home())
     if word == "~" or word.startswith("~/"):
         word = home + word[1:]
-    word = re.sub(r"\$\{HOME\}|\$HOME\b", home, word)
-    word = re.sub(r"\$\{PWD\}|\$PWD\b", str(cwd), word)
+    word = re.sub(r"\$\{HOME\}|\$HOME\b", lambda _: home, word)  # a function: Windows paths hold backslashes
+    word = re.sub(r"\$\{PWD\}|\$PWD\b", lambda _: str(cwd), word)
     if "$" in word or "`" in word:
         return None
     path = Path(word) if os.path.isabs(word) else cwd / word

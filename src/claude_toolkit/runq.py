@@ -267,7 +267,13 @@ def execute(
     with log:
         log.write(f"$ {' '.join(command)}\n")
         process = subprocess.Popen(
-            command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace"
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            errors="replace",
+            encoding="utf-8",
         )
         timer = None
         if timeout is not None:

@@ -114,7 +114,7 @@ def site_packages(project: Path) -> list[Path]:
         try:
             done = subprocess.run(
                 ["python3", "-c", "import json, sys; print(json.dumps(sys.path))"],
-                capture_output=True, text=True, timeout=10, check=False,
+                capture_output=True, text=True, timeout=10, check=False, encoding="utf-8", errors="replace",
             )  # fmt: skip
             found = [Path(p) for p in json.loads(done.stdout or "[]") if p.endswith(("site-packages", "dist-packages"))]
         except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
@@ -130,7 +130,7 @@ def _dist_info(site: Path, name: str) -> Path | None:
             return info
     for info in infos:  # an import name such as `yaml` for PyYAML
         top = info / "top_level.txt"
-        if top.exists() and name in top.read_text().split():
+        if top.exists() and name in top.read_text(encoding="utf-8").split():
             return info
     return None
 
@@ -140,7 +140,7 @@ def _python_declared(project: Path, name: str) -> tuple[str | None, str | None]:
     if not pyproject:
         return None, None
     try:
-        data = tomllib.loads(pyproject.read_text())
+        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError):
         return None, None
     wanted = _python_name(name)
@@ -160,9 +160,11 @@ def find_python(project: Path, name: str) -> Library:
         if not info:
             continue
         meta = (
-            Parser().parsestr((info / "METADATA").read_text(errors="replace")) if (info / "METADATA").exists() else {}
+            Parser().parsestr((info / "METADATA").read_text(errors="replace", encoding="utf-8"))
+            if (info / "METADATA").exists()
+            else {}
         )
-        top = (info / "top_level.txt").read_text().split() if (info / "top_level.txt").exists() else []
+        top = (info / "top_level.txt").read_text(encoding="utf-8").split() if (info / "top_level.txt").exists() else []
         if not top and (info / "RECORD").exists():
             top = _record_modules(info)
         modules = [m for m in top if not m.startswith("_")] or top
@@ -200,7 +202,7 @@ def find_python(project: Path, name: str) -> Library:
 def _record_modules(info: Path) -> list[str]:
     """Top-level modules of a distribution from its RECORD, when top_level.txt is missing."""
     modules = set()
-    for line in (info / "RECORD").read_text().splitlines():
+    for line in (info / "RECORD").read_text(encoding="utf-8").splitlines():
         first = line.split(",", 1)[0].split("/", 1)[0]
         if first and not first.startswith(("..", "__pycache__")) and not first.endswith((".dist-info", ".data")):
             modules.add(first.removesuffix(".py"))
@@ -221,7 +223,7 @@ def _class_line(node: ast.ClassDef) -> str:
 def python_api(entry: Path) -> list[str]:
     """Public top-level names of a module: signatures, classes with public methods, re-exports."""
     try:
-        tree = ast.parse(entry.read_text(errors="replace"))
+        tree = ast.parse(entry.read_text(encoding="utf-8", errors="replace"))
     except (OSError, SyntaxError):
         return []
     exported: list[str] | None = None
@@ -280,7 +282,7 @@ def python_find(root: Path, symbol: str) -> list[Definition]:
     files = [root] if root.is_file() else list(_walk(root, (".py", ".pyi")))
     for file in files:
         try:
-            tree = ast.parse(file.read_text(errors="replace"))
+            tree = ast.parse(file.read_text(errors="replace", encoding="utf-8"))
         except (OSError, SyntaxError):
             continue
         for node in ast.walk(tree):
@@ -329,7 +331,7 @@ def _package_dir(project: Path, name: str) -> Path | None:
 def _read_json(path: Path) -> dict | None:
     """A package.json, or None when it is unreadable (a broken install must not crash the report)."""
     try:
-        data = json.loads(path.read_text(errors="replace"))
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
     except (OSError, json.JSONDecodeError):
         return None
     return data if isinstance(data, dict) else None
@@ -383,7 +385,7 @@ def find_node(project: Path, name: str) -> Library:
     manifest = _find_up(project, "package.json")
     if manifest:
         try:
-            own = json.loads(manifest.read_text())
+            own = json.loads(manifest.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             own = {}
         for group in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
@@ -400,7 +402,7 @@ DTS_DECLARE = re.compile(r"^declare\s+(function|class|const|namespace|enum)\s+[A
 def dts_api(entry: Path) -> list[str]:
     """Exported declarations, multi-line ``export { … }`` lists joined, and the ``declare``s behind ``export =``."""
     lines: list[str] = []
-    source = entry.read_text(errors="replace").splitlines()
+    source = entry.read_text(encoding="utf-8", errors="replace").splitlines()
     index = 0
     while index < len(source):
         line = source[index]
@@ -428,7 +430,7 @@ def text_find(root: Path, pattern: re.Pattern, suffixes: tuple[str, ...]) -> lis
     found = []
     for file in [root] if root.is_file() else _walk(root, suffixes):
         try:
-            lines = file.read_text(errors="replace").splitlines()
+            lines = file.read_text(errors="replace", encoding="utf-8").splitlines()
         except OSError:
             continue
         for index, line in enumerate(lines):
@@ -465,7 +467,9 @@ def find_rust(project: Path, name: str) -> Library:
     lock = _find_up(project, "Cargo.lock")
     if not lock:
         raise NotFound(name)
-    versions = re.findall(rf'\[\[package\]\]\nname = "{re.escape(name)}"\nversion = "([^"]+)"', lock.read_text())
+    versions = re.findall(
+        rf'\[\[package\]\]\nname = "{re.escape(name)}"\nversion = "([^"]+)"', lock.read_text(encoding="utf-8")
+    )
     if not versions:
         raise NotFound(name)
     version = versions[-1]
@@ -478,7 +482,7 @@ def find_rust(project: Path, name: str) -> Library:
         library.readme = _readme_in(path)
         library.entry = path / "src" / "lib.rs" if (path / "src" / "lib.rs").exists() else None
         try:
-            package = tomllib.loads((path / "Cargo.toml").read_text()).get("package", {})
+            package = tomllib.loads((path / "Cargo.toml").read_text(encoding="utf-8")).get("package", {})
             library.summary = str(package.get("description") or "")
             library.homepage = str(package.get("documentation") or package.get("repository") or "")
         except (OSError, tomllib.TOMLDecodeError):
@@ -487,7 +491,7 @@ def find_rust(project: Path, name: str) -> Library:
         library.notes.append("source not in the Cargo registry cache (run `cargo fetch`)")
     manifest = _find_up(project, "Cargo.toml")
     if manifest:
-        match = re.search(rf"^\s*{re.escape(name)}\s*=\s*(.+)$", manifest.read_text(), re.MULTILINE)
+        match = re.search(rf"^\s*{re.escape(name)}\s*=\s*(.+)$", manifest.read_text(encoding="utf-8"), re.MULTILINE)
         if match:
             library.declared, library.declared_in = f"{name} = {match.group(1).strip()}", str(manifest)
     return library
@@ -497,8 +501,8 @@ RUST_PUB = re.compile(r"^pub\s+(?:async\s+|const\s+|unsafe\s+)*(fn|struct|enum|t
 
 
 def rust_api(entry: Path) -> list[str]:
-    return [line.strip().rstrip("{").rstrip() for line in entry.read_text(errors="replace").splitlines()
-            if RUST_PUB.match(line)]  # fmt: skip
+    text = entry.read_text(encoding="utf-8", errors="replace")
+    return [line.strip().rstrip("{").rstrip() for line in text.splitlines() if RUST_PUB.match(line)]
 
 
 # --- Go -----------------------------------------------------------------------------------------
@@ -519,7 +523,9 @@ def find_go(project: Path, name: str) -> Library:
     gomod = _find_up(project, "go.mod")
     if not gomod:
         raise NotFound(name)
-    match = re.search(rf"^\s*(?:require\s+)?{re.escape(name)}\s+(v\S+)", gomod.read_text(), re.MULTILINE)
+    match = re.search(
+        rf"^\s*(?:require\s+)?{re.escape(name)}\s+(v\S+)", gomod.read_text(encoding="utf-8"), re.MULTILINE
+    )
     if not match:
         raise NotFound(name)
     version = match.group(1)
@@ -542,7 +548,7 @@ def go_api(directory: Path) -> list[str]:
     for file in sorted(directory.glob("*.go")):
         if file.name.endswith("_test.go"):
             continue
-        lines += [line.rstrip("{").rstrip() for line in file.read_text(errors="replace").splitlines()
+        lines += [line.rstrip("{").rstrip() for line in file.read_text(errors="replace", encoding="utf-8").splitlines()
                   if GO_EXPORTED.match(line)]  # fmt: skip
     return lines
 
@@ -591,7 +597,7 @@ def find_symbol(library: Library, symbol: str) -> list[Definition]:
 
 def readme_text(library: Library) -> str:
     if library.readme:
-        return library.readme.read_text(errors="replace")
+        return library.readme.read_text(errors="replace", encoding="utf-8")
     return library.readme_text
 
 
