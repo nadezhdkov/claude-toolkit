@@ -27,6 +27,8 @@ ctk sessions --json              # the full summary as JSON
 | tokens written | output tokens and the number of model calls | — |
 | context per session | average tokens read per session, and the median and largest **peak window** (the most one call read: how full the context got) | `runq`, `map`, `handoff` |
 | compactions | conversation compactions, and how many sessions had one | `map`, subagents |
+| window growth per call | median tokens a session's window grows per model call | `runq`, `runq-nudge` |
+| relay point | the window size at which handing over to a fresh session would have cost least, what it saves and how many sessions would have relayed ([below](#relay-point)) | sets `[hooks.relay] threshold` |
 | results re-read later | each tool result's size × the model calls that read it again before the end or the next compaction, by tool: what an output really cost | `runq`, `libdocs`, `map` |
 | repeated reads of a file | `Read` calls on a file already read in the same session (counted through a hash; names are never kept) | `map`, `handoff` |
 | skills, subagents, MCP servers, ctk commands | usage counts | used for the monthly review |
@@ -38,6 +40,18 @@ cache). A 10,000-token command output early in a 300-call session is read
 about 3 million times over, so the total of tool outputs understates their
 cost by orders of magnitude; "results re-read later" counts it the way the
 model pays for it.
+
+## Relay point
+
+Each session is replayed as if it had relayed (`ctk relay`) whenever its
+window reached a threshold: from then on its window is what a fresh session
+reads once it has resumed (the median window at the first edit, plus about
+4,000 tokens of handoff), and each relay costs two extra calls at the old size
+plus writing the new prefix to the cache (a cache write costs 12.5 cache
+reads). Thresholds from 100k to 900k tokens are tried, skipping any below
+twice the fresh window. Among those that save at least 90% of the best saving,
+the highest wins: every relay costs some of the thread, which the model
+cannot price. Under a 5% saving there is no relay point.
 
 ## Privacy
 

@@ -1,6 +1,6 @@
 # Hooks (`ctk` plugin) and `ctk hook`
 
-The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers seven
+The `ctk` Claude Code plugin, in [`plugin/`](../../plugin), registers nine
 hooks. Each is a one-line shell command that calls `ctk hook <name>` with the
 event JSON on stdin, so all logic lives in the tested `ctk` package.
 
@@ -11,7 +11,9 @@ event JSON on stdin, so all logic lives in the tested `ctk` package.
 | `guard-destructive` | before Bash | flags `rm -rf` outside the project, force-push to `main`/`master`, `git reset --hard` with uncommitted work; **warn-only by default** |
 | `secrets` | before Bash (`git commit`) | `gitleaks` on the staged changes; denies the commit on findings |
 | `notify` | waiting for input, end of a long turn | desktop notification, at most one per minute |
-| `continuity` | session resumes after a compaction | puts back the branch, commit, uncommitted files, `ctk verify` status and the branch's handoff file |
+| `continuity` | session starts after a compaction, `/clear`, a resume or a relay | puts back the branch, commit, uncommitted files, `ctk verify` status and the branch's handoff file |
+| `relay` | end of turn, before Edit/Write | past the relay point, asks Claude once to hand over to a fresh session (`ctk relay`); then denies the old session's edits |
+| `runq-nudge` | after Bash | long output that did not go through `ctk`: suggests `ctk runq` or filtering, once per command |
 | `agent-contract` | a ctk subagent finishes | sends a report that breaks its output contract back once ([agents](../agents.md)) |
 
 ## Install
@@ -35,7 +37,8 @@ directory, so `git pull` updates it. Remove it with `ctk setup --uninstall` or
   `exit 0`, so a missing or outdated `ctk` is ignored too.
 - **Quiet.** Nothing is printed when all is well or when a hook does not apply.
   Only `guard-destructive` (in block mode) and `secrets` can stop a tool call,
-  and only `affected-tests` can ask Claude to continue a turn.
+  `relay` denies edits only in a session that has handed over, and only
+  `affected-tests` and `relay` can ask Claude to continue a turn.
 - **Per project.** Hooks are installed once, globally, and decide at run time
   whether they apply.
 
@@ -58,6 +61,13 @@ timeout = 240                   # seconds for all test runs at the end of a turn
 
 [hooks.notify]
 min-seconds = 60                # notify when a turn took at least this long
+
+[hooks.relay]
+threshold = 300000              # window (tokens) that triggers a relay; see `ctk sessions`
+
+[hooks.runq-nudge]
+min-chars = 8000                # output size that triggers the nudge
+max-per-session = 3
 ```
 
 ## `format-file`
@@ -139,13 +149,34 @@ chmod +x .git/hooks/pre-commit
 ## `continuity`
 
 A compaction replaces the conversation with a summary, and what the summary
-dropped is lost. On `SessionStart` with source `compact`, this hook adds facts
+dropped is lost; `/clear` and a relay start from nothing. On `SessionStart`
+with source `compact`, `clear` or `resume`, and at the start of a session
+opened by [`ctk relay`](relay.md) (`CTK_RELAY=1`), this hook adds facts
 that do not depend on it: the branch, the commit and the number of
 uncommitted files, every check `ctk verify` knows with its state for the code
 as it is now (`~ stale` when the code changed since it ran), and the branch's
 handoff file (`.claude/handoff/<branch>.md`, at most 60 lines, with its age).
-Silent outside a git repository, after other kinds of session start, or when
-there is nothing to report. It costs nothing until a compaction happens.
+After a relay it also asks Claude to resume from the handoff file. Silent
+outside a git repository, on a plain start, or when there is nothing to
+report.
+
+## `relay`
+
+At the end of a turn (a safe point: no edit half done) it reads the size of
+the session's window from the last main-thread usage record in the
+transcript. Past `threshold` (default 300,000 tokens, the relay point of the
+maintainer's sessions; `ctk sessions` shows yours) it asks Claude, once per
+session, to bring the handoff file up to date and run [`ctk relay`](relay.md),
+or to finish what the user asked first. After a relay, `Edit`, `Write`,
+`MultiEdit` and `NotebookEdit` in the old session are denied, with the
+`ctk relay --release` command that lifts it.
+
+## `runq-nudge`
+
+After a Bash command that printed more than `min-chars` (default 8,000, about
+2,000 tokens) and did not go through `ctk`, tells Claude that every later call
+re-reads that output and to use `ctk runq` for tests, builds and linters or to
+filter the output. Once per command name, at most `max-per-session` times.
 
 ## `notify`
 
@@ -173,4 +204,7 @@ installing the plugin: it must not rise.
   failures reach Claude.
 - Affected tests: sources map to their tests; failures block once, then only warn;
   passes and turns without edits are silent.
+- Continuity, relay and runq-nudge: see `tests/test_relay.py` (after `/clear`,
+  resume and relay; asks once past the threshold; denies edits after a relay;
+  one nudge per command).
 - Notify: short turns are silent, long ones notify, at most once per minute.

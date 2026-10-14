@@ -115,6 +115,12 @@ def _diffcheck(args: argparse.Namespace) -> int:
     return diffcheck.run(args)
 
 
+def _relay(args: argparse.Namespace) -> int:
+    from . import relay
+
+    return relay.run(args)
+
+
 def _hook(args: argparse.Namespace) -> int:
     if args.git:
         from .hooks.secrets import git_pre_commit
@@ -142,6 +148,7 @@ OVERVIEW = (
     ("map", "compact map of a repository's files and symbols; where a symbol is used"),
     ("verify", "what is verified for the current code: fresh, failing, stale or never run"),
     ("diffcheck", "deterministic checks of a change: removed API, risky files, debug leftovers, tests"),
+    ("relay", "hand the work over to a fresh Claude Code session in a new terminal"),
     ("setup", "wire the toolkit into Claude Code (asks before each change)"),
     ("hook", "logic behind the Claude Code plugin hooks (event JSON on stdin)"),
 )
@@ -320,6 +327,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--strict", action="store_true", help="exit 1 on any finding, not only high ones")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_diffcheck)
+
+    p = sub.add_parser("relay", help="hand the work over to a fresh Claude Code session in a new terminal")
+    action = p.add_mutually_exclusive_group()
+    action.add_argument("--show", action="store_true", help="print what the new session starts from, and stop")
+    action.add_argument("--release", action="store_true", help="let a relayed session edit again")
+    p.add_argument("--session", metavar="ID", help="the session handing over (default: $CLAUDE_CODE_SESSION_ID)")
+    p.add_argument("--terminal", help="terminal to open (default: [relay] terminal, else detected)")
+    p.add_argument("--force", action="store_true", help="relay even without a fresh handoff file")
+    p.add_argument("--dry-run", action="store_true", help="show the command and change nothing")
+    p.add_argument("--yes", action="store_true", help="open the new session without asking")
+    p.set_defaults(func=_relay)
 
     from .hooks import HOOKS
 

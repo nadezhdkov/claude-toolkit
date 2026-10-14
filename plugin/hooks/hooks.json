@@ -1,5 +1,5 @@
 {
-  "description": "claude-toolkit quality hooks: format edited files, run affected tests, guard destructive commands, scan commits for secrets, desktop notifications, subagent output contracts, verified state after a compaction. Logic lives in `ctk hook <name>`.",
+  "description": "claude-toolkit quality hooks: format edited files, run affected tests, guard destructive commands, scan commits for secrets, desktop notifications, subagent output contracts, verified state after a compaction, /clear or a relay, relay of sessions that grew too large, a nudge towards ctk runq for long output. Logic lives in `ctk hook <name>`.",
   "hooks": {
     "PreToolUse": [
       {
@@ -16,6 +16,16 @@
             "timeout": 90
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v ctk >/dev/null 2>&1 && ctk hook relay; exit 0",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -30,6 +40,16 @@
           {
             "type": "command",
             "command": "command -v ctk >/dev/null 2>&1 && ctk hook affected-tests; exit 0",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v ctk >/dev/null 2>&1 && ctk hook runq-nudge; exit 0",
             "timeout": 10
           }
         ]
@@ -70,6 +90,11 @@
             "type": "command",
             "command": "command -v ctk >/dev/null 2>&1 && ctk hook notify; exit 0",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v ctk >/dev/null 2>&1 && ctk hook relay; exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -88,7 +113,7 @@
     ],
     "SessionStart": [
       {
-        "matcher": "compact",
+        "matcher": "startup|compact|clear|resume",
         "hooks": [
           {
             "type": "command",
