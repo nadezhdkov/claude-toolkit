@@ -62,6 +62,15 @@ Logs written by `ctk runq` and the hooks live in `~/.cache/claude-toolkit/` and 
 
 ## Supported systems
 
-Linux (Arch-based, Debian/Ubuntu, Fedora, openSUSE) and macOS. Install hints
-are tailored to the detected package manager; other systems get generic hints.
-Windows is untested.
+Linux (Arch-based, Debian/Ubuntu, Fedora, openSUSE), macOS and Windows; CI
+tests all three. Install hints are tailored to the detected package manager;
+other systems get generic hints.
+
+### Windows
+
+Install with `.\install.ps1` in PowerShell (`-Yes`, `-DryRun`; exit `3` when it
+needs approval and has no terminal, like `install.sh`). The plugin needs
+[Git for Windows](https://git-scm.com): Claude Code runs hooks in Git Bash,
+and without it Claude Code has no Bash tool, which the plugin's skills and
+agents use to run `ctk`. A few commands stay Linux-only: `ctk sandbox`
+(bubblewrap) and `ctk shoot desktop` (Xvfb).

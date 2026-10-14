@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `install.ps1`: the Windows installer, with the same plan, questions and
+  exit codes as `install.sh`. The plugin's `ctk` launcher finds Python as
+  `python3`, `python` or `py -3` and an installed `ctk.exe`, and CI installs
+  and smoke-tests `ctk` on macOS and Windows.
 - `ctk relay`: hands the work over to a fresh Claude Code session in a new
   terminal window (tmux, konsole, kitty, alacritty, wezterm, ghostty,
   gnome-terminal, foot or xterm, detected or set with `[relay] terminal`),

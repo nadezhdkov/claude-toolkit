@@ -124,7 +124,7 @@ the CI as the proof since the maintainer works on Linux.
 - ✅ Tests run on macOS and Windows in CI; text I/O is UTF-8 everywhere
   (Windows defaults to its legacy code page), paths in output use `/`, and
   confirmation never hangs on Windows' `NUL`.
-- ⏳ Windows install: `install.ps1`, the plugin launcher, and hooks under Git
+- ✅ Windows install: `install.ps1`, the plugin launcher, and hooks under Git
   Bash (Claude Code runs hooks there; without Git Bash it has no Bash tool,
   which the plugin's workflow needs).
 - ⏳ `ctk relay` on macOS (Terminal, iTerm2) and Windows (Windows Terminal,
