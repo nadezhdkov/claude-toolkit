@@ -1,5 +1,7 @@
 # Installation
 
+**Languages:** **English** · [Português (Brasil)](i18n/pt-BR/installation.md) · [Español](i18n/es/installation.md) · [Deutsch](i18n/de/installation.md) · [简体中文](i18n/zh-CN/installation.md)
+
 ## Quick install
 
 ```bash

@@ -47,7 +47,11 @@ make ci                                               # all of the above (`make`
 
 - Python 3.11+, type hints, `from __future__ import annotations`, dataclasses.
 - One module per command in `src/claude_toolkit/`; wire it in `cli.py`.
-- Documentation in English. New docs go in `docs/` (commands in
+- Documentation in English, which is the source of truth. `README.md` and
+  `docs/installation.md` are translated in `docs/i18n/<language>/`: when you
+  change either, update the four translations in the same pull request
+  (`tests/test_i18n.py` fails until their structure matches; code blocks stay
+  in English). New docs go in `docs/` (commands in
   `docs/commands/`); only standard files (`README.md`, `AGENTS.md`,
   `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`, `Makefile`) live at the root.
 - Every behavioural change adds an entry under `## [Unreleased]` in
