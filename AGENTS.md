@@ -58,8 +58,10 @@ make ci                                               # all of the above (`make`
   in English). New docs go in `docs/` (commands in
   `docs/commands/`); only standard files (`README.md`, `AGENTS.md`,
   `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`, `Makefile`) live at the root.
-- Every behavioural change adds an entry under `## [Unreleased]` in
-  `docs/CHANGELOG.md` in the same pull request. Semantic Versioning, computed
+- Every behavioural change adds a changelog **fragment** in the same pull request:
+  `docs/changelog.d/<slug>.<added|changed|fixed|…>.md`, one small file with the entry
+  ([how](docs/changelog.d/README.md)). Do not edit `docs/CHANGELOG.md`: every pull request writing at the
+  top of `[Unreleased]` is what made them conflict with each other. Semantic Versioning, computed
   from the Conventional Commit titles: never edit a version by hand. `make release`
   writes it into every file and cuts the changelog ([docs/releasing.md](docs/releasing.md));
   merging that pull request tags and publishes the release.

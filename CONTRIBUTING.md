@@ -30,9 +30,10 @@ Or `make ci` for all of it (`make` lists the shortcuts: `lint`, `format`,
   `README.md` or `docs/installation.md`, update their translations in
   [docs/i18n](docs/i18n/README.md) too, or ask in the pull request for help with
   a language you don't read; `tests/test_i18n.py` checks that they match.
-- **Add a changelog entry** under `## [Unreleased]` in
-  [docs/CHANGELOG.md](docs/CHANGELOG.md). CI/docs-only changes can get the
-  `skip-changelog` label from a maintainer instead.
+- **Add a changelog fragment**: one small file, `docs/changelog.d/<slug>.added.md` (or `changed`, `fixed`, …),
+  holding the entry ([how](docs/changelog.d/README.md)). Don't edit
+  [docs/CHANGELOG.md](docs/CHANGELOG.md): separate files never conflict, and the release folds them in.
+  CI/docs-only changes can get the `skip-changelog` label from a maintainer instead.
 - **Don't touch version numbers.** Maintainers run `make release`
   ([docs/releasing.md](docs/releasing.md)); the next version comes from your PR title, so
   `feat:` and `fix:` matter.
@@ -48,7 +49,7 @@ Or `make ci` for all of it (`make` lists the shortcuts: `lint`, `format`,
 | Tests on Python 3.11, 3.12, 3.13 | `CI / Test (Python 3.x)` |
 | `uv tool install` and a smoke run of every command | `CI / Install` |
 | Conventional Commits PR title | `PR checks / PR title` |
-| `docs/CHANGELOG.md` updated | `PR checks / Changelog` |
+| a changelog fragment (or `docs/CHANGELOG.md`) added | `PR checks / Changelog` |
 
 All of them are required before merging.
 
