@@ -49,6 +49,7 @@ CHANGELOG = "docs/CHANGELOG.md"
 # pull request would write in the same place and conflict with the others. A release folds them in.
 FRAGMENTS = "docs/changelog.d"
 CATEGORIES = ("added", "changed", "deprecated", "removed", "fixed", "security")
+CONFLICT_MARKER = re.compile(r"(?m)^(<<<<<<< |>>>>>>> )")  # a half-resolved merge, which would reach the release notes
 FRAGMENT = re.compile(rf"^[A-Za-z0-9][\w.-]*\.({'|'.join(CATEGORIES)})\.md$")
 
 
@@ -99,6 +100,9 @@ def check(root: Path) -> list[str]:
     problems = [
         f"{name} has {version}, pyproject.toml has {expected}" for name, version in found.items() if version != expected
     ]
+    for path in [root / CHANGELOG, *fragment_files(root)]:
+        if CONFLICT_MARKER.search(path.read_text(encoding="utf-8")):
+            problems.append(f"{path.relative_to(root).as_posix()} has merge conflict markers")
     for path in fragment_files(root):
         if not FRAGMENT.match(path.name):
             problems.append(f"{FRAGMENTS}/{path.name}: name it <slug>.<{'|'.join(CATEGORIES)}>.md")

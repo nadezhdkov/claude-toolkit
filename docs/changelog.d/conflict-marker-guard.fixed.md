@@ -1,0 +1,1 @@
+- `scripts/release.py check`, which CI and the `Release` workflow run, now refuses a changelog or a fragment that still holds merge conflict markers, so a half-resolved merge cannot reach the release notes.
