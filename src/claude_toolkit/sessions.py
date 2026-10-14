@@ -50,6 +50,8 @@ class Session:
     tokens: Counter = field(default_factory=Counter)  # USAGE_KEYS summed once per model call
     model_calls: int = 0
     peak_context: int = 0  # the most tokens one call read: how full the window got
+    windows: list[int] = field(default_factory=list)  # tokens each model call read, in order
+    first_edit_window: int | None = None  # the window when the first edit was made
     compactions: int = 0
     repeated_reads: int = 0
     result_chars_by_tool: Counter = field(default_factory=Counter)
@@ -130,6 +132,7 @@ def parse_session(path: Path) -> Session:
                     counts["input_tokens"] + counts["cache_creation_input_tokens"] + counts["cache_read_input_tokens"]
                 )
                 session.peak_context = max(session.peak_context, context)
+                session.windows.append(context)
             attachment = record.get("attachment")
             if isinstance(attachment, dict) and attachment.get("type") == "edited_text_file":
                 session.changed_on_disk += 1
@@ -148,6 +151,7 @@ def parse_session(path: Path) -> Session:
                     if name in EDIT_TOOLS and not edited:
                         edited = True
                         session.explore_before_edit, session.reads_before_edit = explored, reads
+                        session.first_edit_window = session.windows[-1] if session.windows else None
                     if not edited:
                         if name in EXPLORE_TOOLS:
                             explored += 1
@@ -184,6 +188,83 @@ def parse_session(path: Path) -> Session:
         until = next((point for point in compacted_at if point > at), session.model_calls)
         session.carried_chars_by_tool[tool] += size * max(0, until - at)
     return session
+
+
+# --- Relay point ---------------------------------------------------------------
+#
+# Every model call reads the whole window again (from the cache), so a long
+# session pays for its early tool results on every later call. Starting a fresh
+# session (a relay) resets the window to what a new session needs to resume the
+# work, at the price of writing that new prefix to the cache and of one extra
+# turn to write the handoff. The model replays each real session as if it had
+# relayed whenever its window passed a threshold, in cache-read equivalents.
+
+CACHE_WRITE_WEIGHT = 12.5  # a cache write costs 12.5x a cache read (1.25 vs 0.1 of the input price)
+HANDOFF_TOKENS = 4_000  # the brief the new session starts from
+RELAY_TURNS = 2  # calls spent on writing the handoff and running `ctk relay`
+RELAY_THRESHOLDS = tuple(range(100_000, 950_000, 50_000))
+MIN_SAVING = 0.05  # below this a relay is not worth the lost thread
+
+
+@dataclass
+class RelayPoint:
+    threshold: int | None  # None: no threshold saves at least MIN_SAVING
+    saving: float  # fraction of the context cost saved at that threshold
+    restart_window: int  # what a fresh session reads once it has resumed the work
+    sessions: int  # sessions long enough to have relayed at the threshold
+    relays: int
+
+
+def restart_window(sessions: list[Session]) -> int:
+    """Median window of a fresh session once it is ready to work: start plus exploration, plus the brief."""
+    starts = [s.windows[0] for s in sessions if s.windows]
+    ready = [s.first_edit_window for s in sessions if s.first_edit_window]
+    base = statistics.median(ready) if ready else statistics.median(starts) if starts else 0
+    return int(base) + HANDOFF_TOKENS
+
+
+def replay(windows: list[int], threshold: int, restart: int) -> tuple[float, int]:
+    """Context cost of a session that relays whenever its window reaches ``threshold``; and how many relays."""
+    cost = 0.0
+    relays = 0
+    offset = 0  # tokens the relays have dropped from the window
+    for window in windows:
+        current = max(restart, window - offset) if offset else window
+        if current >= threshold:
+            cost += RELAY_TURNS * current + CACHE_WRITE_WEIGHT * restart
+            offset = window - restart
+            relays += 1
+            current = restart
+        cost += current
+    return cost, relays
+
+
+def relay_point(sessions: list[Session]) -> RelayPoint:
+    """The highest threshold that keeps at least 90% of the best saving: fewer relays, nearly the same gain.
+
+    Every relay costs some of the thread, which the model cannot price, so among
+    thresholds that save about the same the one that interrupts least wins.
+    """
+    main = [s for s in sessions if not s.subagent and s.windows]
+    restart = restart_window(main)
+    actual = sum(sum(s.windows) for s in main)
+    if not actual:
+        return RelayPoint(None, 0.0, restart, 0, 0)
+    points = []
+    for threshold in RELAY_THRESHOLDS:
+        if threshold < restart * 2:  # a fresh session would be half full already
+            continue
+        total, relays, touched = 0.0, 0, 0
+        for s in main:
+            cost, count = replay(s.windows, threshold, restart)
+            total += cost
+            relays += count
+            touched += count > 0
+        points.append(RelayPoint(threshold, round(1 - total / actual, 4), restart, touched, relays))
+    best = max((p.saving for p in points), default=0.0)
+    if best < MIN_SAVING:
+        return RelayPoint(None, max(best, 0.0), restart, 0, 0)
+    return max((p for p in points if p.saving >= best * 0.9), key=lambda p: p.threshold or 0)
 
 
 def find_sessions(root: Path, since_days: float | None, include_subagents: bool) -> list[Path]:
@@ -223,6 +304,11 @@ class Summary:
     sessions_with_compaction: int
     repeated_reads: int
     repeated_reads_per_session: float
+    median_window_growth: float | None  # tokens the window grows per model call
+    relay_threshold: int | None
+    relay_saving: float
+    relay_restart_window: int
+    relay_sessions: int
     result_chars_by_tool: list[tuple[str, int]]
     carried_chars_by_tool: list[tuple[str, int]]
     top_tools: list[tuple[str, int]]
@@ -258,6 +344,8 @@ def summarise(sessions: list[Session]) -> Summary:
     read_tokens = tokens["input_tokens"] + tokens["cache_creation_input_tokens"] + tokens["cache_read_input_tokens"]
     peaks = [s.peak_context for s in main if s.peak_context]
     repeated = sum(s.repeated_reads for s in main)
+    growth = [(max(s.windows) - s.windows[0]) / (len(s.windows) - 1) for s in main if len(s.windows) > 1]
+    relay = relay_point(main)
     return Summary(
         sessions=len(main),
         subagent_sessions=len(sessions) - len(main),
@@ -288,6 +376,11 @@ def summarise(sessions: list[Session]) -> Summary:
         sessions_with_compaction=sum(1 for s in main if s.compactions),
         repeated_reads=repeated,
         repeated_reads_per_session=round(repeated / len(main), 2) if main else 0.0,
+        median_window_growth=round(statistics.median(growth), 1) if growth else None,
+        relay_threshold=relay.threshold,
+        relay_saving=relay.saving,
+        relay_restart_window=relay.restart_window,
+        relay_sessions=relay.sessions,
         result_chars_by_tool=by_tool.most_common(5),
         carried_chars_by_tool=carried.most_common(5),
         top_tools=tools.most_common(10),
@@ -300,6 +393,16 @@ def summarise(sessions: list[Session]) -> Summary:
 
 def _peak(value: float | None) -> str:
     return "-" if value is None else f"{value:,.0f}"
+
+
+def _relay(summary: Summary) -> str:
+    if summary.relay_threshold is None:
+        return f"none: a fresh session would save under {MIN_SAVING:.0%} of the context cost"
+    return (
+        f"{summary.relay_threshold:,} tokens · saves ~{summary.relay_saving:.0%} of the context cost"
+        f" · {summary.relay_sessions} session(s) would relay · a fresh session resumes at"
+        f" ~{summary.relay_restart_window:,}"
+    )
 
 
 def _pairs(items: list[tuple[str, int]]) -> str:
@@ -345,6 +448,8 @@ def render(summary: Summary, label: str, style: Style | None = None) -> str:
             f"avg {summary.context_tokens_per_session:,.0f} tokens read · peak window median "
             f"{_peak(summary.median_peak_context)} · max {summary.max_peak_context:,}",
         ),
+        ("window growth per call (median)", _peak(summary.median_window_growth)),
+        ("relay point", _relay(summary)),
         ("compactions", f"{summary.compactions} in {summary.sessions_with_compaction} session(s)"),
         ("repeated reads of a file", f"{summary.repeated_reads} ({summary.repeated_reads_per_session} per session)"),
         (
@@ -424,6 +529,17 @@ def _render_styled(summary: Summary, label: str, st: Style) -> str:
             "per session",
             f"avg {st.bold(_human(summary.context_tokens_per_session))} read {st.muted('·')} peak window median "
             f"{st.bold(_peak(summary.median_peak_context))} {st.muted(f'max {summary.max_peak_context:,}')}",
+        ),
+        row("window growth", f"{st.bold(_peak(summary.median_window_growth))} {st.muted('tokens / call (median)')}"),
+        row(
+            "relay point",
+            st.muted("none")
+            if summary.relay_threshold is None
+            else f"{st.bold(f'{summary.relay_threshold:,}')} {st.muted('·')} "
+            f"{st.ok(f'saves ~{summary.relay_saving:.0%}')} "
+            + st.muted(
+                f"({summary.relay_sessions} sessions would relay, fresh one at ~{_human(summary.relay_restart_window)})"
+            ),
         ),
         row(
             "compactions",

@@ -17,4 +17,5 @@ COMMANDS = (
     "map",
     "verify",
     "diffcheck",
+    "relay",
 )

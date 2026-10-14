@@ -6,8 +6,28 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `ctk relay`: hands the work over to a fresh Claude Code session in a new
+  terminal window (tmux, konsole, kitty, alacritty, wezterm, ghostty,
+  gnome-terminal, foot or xterm, detected or set with `[relay] terminal`),
+  starting from the branch's handoff file, which must be fresh. Asks first
+  (exit 3 without a terminal unless `[relay] auto = true`), locks the old
+  session's edits (`--release` lifts it) and falls back to `/clear`.
+- `relay` hook: at the end of a turn whose window passed the relay point
+  (`[hooks.relay] threshold`, default 300,000 tokens), asks Claude once per
+  session to update the handoff and run `ctk relay`; denies edits in a session
+  that has handed over.
+- `runq-nudge` hook: after a Bash command that printed more than ~2,000 tokens
+  without `ctk`, suggests `ctk runq` or filtering, once per command.
+- `ctk sessions` reports the window growth per call and the relay point: the
+  window size at which a fresh session would have cost least, and what it
+  saves.
+
 ### Changed
 
+- The `continuity` hook also runs after `/clear`, on resume and at the start
+  of a session opened by `ctk relay`.
 - Roadmap: Phase 7 is closed. `ctk recall` is not built because the
   transcripts show no missing search (5 repeated searches in 1,944, none
   repeated after a compaction); Phase 8 re-checks it.
