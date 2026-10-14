@@ -26,7 +26,10 @@ Or `make ci` for all of it (`make` lists the shortcuts: `lint`, `format`,
   (see [docs/design.md](docs/design.md)).
 - **Ask before changing the system.** Use `common.confirm()`, support
   `--dry-run`/`--yes`, back up user files, and keep `ctk` stdlib-only.
-- **Document it** in `docs/` (commands go in `docs/commands/`).
+- **Document it** in `docs/` (commands go in `docs/commands/`). If you change
+  `README.md` or `docs/installation.md`, update their translations in
+  [docs/i18n](docs/i18n/README.md) too, or ask in the pull request for help with
+  a language you don't read; `tests/test_i18n.py` checks that they match.
 - **Add a changelog entry** under `## [Unreleased]` in
   [docs/CHANGELOG.md](docs/CHANGELOG.md). CI/docs-only changes can get the
   `skip-changelog` label from a maintainer instead.
