@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `ctk setup` for agents other than Claude Code: it copies the process skills to `~/.agents/skills/`
+  (offered when Codex, Gemini CLI or opencode is found, or with `--agents`; it never replaces or
+  removes a folder it did not write, and leaves out the project-only `issue` skill), and
+  `--agents-file FILE` adds the short `ctk` section, without the Claude-only hooks sentence, to a
+  global instructions file you name. Both are undone by `--uninstall`. The skills ship inside the wheel.
 - `ctk completion bash|zsh|fish|powershell`: prints a tab completion script generated from the
   command line parser, so commands, `shoot` kinds, options and fixed choices (`verify`, `hook`,
   `libdocs --ecosystem`) are completed without a list to maintain. Nothing is written to your shell

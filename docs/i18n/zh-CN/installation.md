@@ -37,6 +37,7 @@ ctk setup
 | Claude Code 指令 | 在 `~/.claude/CLAUDE.md` 末尾的 `<!-- claude-toolkit:start -->` 和 `<!-- claude-toolkit:end -->` 之间添加（或更新）一小段内容，让 Claude Code 知道何时使用每个 `ctk` 命令。原文件会备份到 `~/.claude/backups/claude-toolkit/`。 | `ctk setup --uninstall` |
 | Hooks 插件 | 把本仓库注册为 `ctk` 插件市场，并安装 `ctk` 插件（`claude plugin marketplace add`、`claude plugin install ctk@ctk`）。参见 [hooks](../../commands/hooks.md)。 | `ctk setup --uninstall` |
 | 可选依赖 | 主动提出用你所用发行版的包管理器，安装 `ctk doctor --toolkit` 列出的缺失工具（例如 `gitleaks`、`Xvfb`）。 | 你的包管理器 |
+| 其他代理（可选） | 找到 Codex、Gemini CLI 或 opencode 时，或使用 `--agents`：把流程类 skills 复制到 `~/.agents/skills/`（绝不覆盖你自己的 skill）。`--agents-file 文件` 会把同样的简短内容添加到你指定的全局指令文件。 | `ctk setup --uninstall`（对该文件需再次传入 `--agents-file 文件`） |
 
 再次运行 `ctk setup` 是安全的：它只会提出缺失或已过期的部分。
 
