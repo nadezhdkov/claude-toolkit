@@ -17,6 +17,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
   exit codes as `install.sh`. The plugin's `ctk` launcher finds Python as
   `python3`, `python` or `py -3` and an installed `ctk.exe`, and CI installs
   and smoke-tests `ctk` on macOS and Windows.
+- `Makefile` with shortcuts for development: `make lint`, `format`, `test`,
+  `check`, `shellcheck`, `actions`, `ci` (everything the required checks
+  run), `screenshots` and `install`; `make` lists them.
 - `ctk relay`: hands the work over to a fresh Claude Code session in a new
   terminal window (tmux, konsole, kitty, alacritty, wezterm, ghostty,
   gnome-terminal, foot or xterm, detected or set with `[relay] terminal`),

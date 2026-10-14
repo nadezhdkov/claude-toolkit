@@ -18,6 +18,9 @@ uv run pytest
 uvx --from shellcheck-py shellcheck install.sh     # if you changed the installer
 ```
 
+Or `make ci` for all of it (`make` lists the shortcuts: `lint`, `format`,
+`test`, `shellcheck`, `actions`, `screenshots`).
+
 - **Start from a real pain.** New tools need a sentence like "I lost X / got Y
   wrong because this was missing" and a testable done criterion
   (see [docs/design.md](docs/design.md)).
