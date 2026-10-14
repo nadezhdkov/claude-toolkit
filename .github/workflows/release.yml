@@ -2,7 +2,9 @@ name: Release
 
 # When the version in the files has no tag yet (a merged release pull request), tag
 # the commit and publish the GitHub release with the changelog section as its notes.
-# Opening the release pull request is `make release` or release-pr.yml.
+# Opening the release pull request is `make release` or release-pr.yml. A new release is also
+# published to PyPI by trusted publishing (no password or token is stored anywhere) once the
+# repository variable PYPI_PUBLISH is "true"; see docs/releasing.md.
 on:
   push:
     branches: [main]
@@ -20,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      released: ${{ steps.release.outputs.released }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,10 +32,12 @@ jobs:
       - name: Version files agree
         run: python3 scripts/release.py check
       - name: Tag and publish a version that has no tag yet
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
         run: |
+          echo "released=false" >> "$GITHUB_OUTPUT"
           version=$(python3 scripts/release.py version)
           if git rev-parse --verify --quiet "refs/tags/v$version" >/dev/null; then
             echo "v$version already exists; nothing to publish."
@@ -39,4 +45,42 @@ jobs:
           fi
           python3 scripts/release.py notes "$version" > "$RUNNER_TEMP/notes.md"
           gh release create "v$version" --target "$SHA" --title "v$version" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "released=true" >> "$GITHUB_OUTPUT"
           echo "Published v$version."
+
+  build:
+    name: Build the distribution
+    needs: publish
+    if: needs.publish.outputs.released == 'true' && vars.PYPI_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Build the wheel and the source distribution
+        run: uv build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # The environment is where PyPI's trusted publisher points; it can also require an approval.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/claude-toolkit/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

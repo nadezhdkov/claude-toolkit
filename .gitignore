@@ -10,3 +10,4 @@ build/
 # Benchmark credentials and results
 benchmark/.env
 benchmark/results/
+.env
