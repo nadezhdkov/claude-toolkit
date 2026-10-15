@@ -1,7 +1,9 @@
 """``guard-destructive`` (PreToolUse on Bash): catch commands that destroy work.
 
 Rules: ``rm`` with both recursive and force flags on a path outside the
-project (temporary directories excepted), a force-push to a protected branch,
+project (temporary directories excepted), also behind ``xargs``; ``find`` with
+``-delete`` or ``-exec rm -rf`` from a start path outside the project (same
+exceptions, plus ``.`` at the project root); a force-push to a protected branch;
 and ``git reset --hard`` while tracked files have uncommitted changes.
 
 The mode starts as ``warn``: the user sees a warning, the command runs and the
@@ -11,7 +13,9 @@ the command is denied and Claude is told why.
 
 from __future__ import annotations
 
+import itertools
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -23,6 +27,8 @@ from .shell import GitCommand, SimpleCommand, as_git, expand, split
 PROTECTED = ["main", "master"]
 GLOB = set("*?[")
 PUSH_VALUE_OPTIONS = {"--repo", "-o", "--push-option", "--receive-pack", "--exec"}
+FIND_EXEC = {"-exec", "-execdir", "-ok", "-okdir"}
+FIND_OPERATORS = {"(", ")", "!", ","}
 
 
 def log_path() -> Path:
@@ -105,10 +111,48 @@ def check_rm(command: SimpleCommand, project: Path | None, temps: list[Path]) ->
     if not (recursive and force):
         return None
     outside = [word for word in targets if not _rm_target_safe(word, command.cwd, project, temps)]
-    if not outside:
+    return _outside("rm -rf", outside, project)
+
+
+def _outside(what: str, words: list[str], project: Path | None) -> str | None:
+    if not words:
         return None
     where = "outside the project" if project else "with no project around it"
-    return f"`rm -rf` {where}: {', '.join(outside[:3])}"
+    return f"`{what}` {where}: {', '.join(words[:3])}"
+
+
+# --- find -delete -------------------------------------------------------------
+
+
+def _find_deletes(expression: list[str]) -> str | None:
+    if "-delete" in expression:
+        return "find -delete"
+    for i, word in enumerate(expression):
+        if word in FIND_EXEC:
+            run = list(itertools.takewhile(lambda arg: arg not in (";", "+"), expression[i + 1 :]))
+            if run and os.path.basename(run[0]) == "rm" and all(_rm_flags(run[1:])[:2]):
+                return f"find {word} rm -rf"
+    return None
+
+
+def check_find(command: SimpleCommand, project: Path | None, temps: list[Path]) -> str | None:
+    if command.name != "find":
+        return None
+    args = command.argv[1:]
+    while args and (args[0] in ("-H", "-L", "-P", "-D") or args[0].startswith("-O")):
+        args = args[2:] if args[0] == "-D" else args[1:]
+    starts = list(itertools.takewhile(lambda arg: not arg.startswith("-") and arg not in FIND_OPERATORS, args))
+    what = _find_deletes(args[len(starts) :])
+    if what is None:
+        return None
+    # Neither find nor rm removes `.` itself, so `find . -delete` at the project root only empties it.
+    outside = [
+        word
+        for word in starts or ["."]
+        if not (os.path.normpath(word) == "." and project and command.cwd == project)
+        and not _rm_target_safe(word, command.cwd, project, temps)
+    ]
+    return _outside(what, outside, project)
 
 
 # --- git push --force -------------------------------------------------------------
@@ -173,7 +217,7 @@ def check(command: str, event: Event) -> list[str]:
     protected = event.config.get("guard-destructive", "protected-branches", PROTECTED)
     reasons: list[str] = []
     for simple in split(command, event.cwd):
-        found = [check_rm(simple, project, temps)]
+        found = [check_rm(simple, project, temps), check_find(simple, project, temps)]
         git = as_git(simple)
         if git:
             found += [check_push(git, [str(name) for name in protected]), check_reset(git)]
