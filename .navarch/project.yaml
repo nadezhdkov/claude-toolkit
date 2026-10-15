@@ -1,0 +1,21 @@
+# Navarch (https://github.com/nadezhdkov/nav) runs agents on this repository's
+# issues. Read at the run's base commit; agents cannot change it.
+autonomy_level: 2
+setup:
+  - uv sync --frozen
+verify:
+  - name: lint
+    run: make lint
+  - name: test
+    run: make test
+allowlist:
+  - make lint
+  - make test
+  - make test *
+  - make format
+  - uv run pytest *
+  - uv run ruff *
+protected_paths:
+  - .github/workflows/**
+  - install.sh
+  - install.ps1
