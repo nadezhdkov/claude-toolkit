@@ -13,6 +13,12 @@ def versions(monkeypatch):
     """Pretend these tool versions are installed."""
     installed: dict[str, tuple[int, int, int] | None] = {}
     monkeypatch.setattr(doctor, "installed_version", lambda tool: installed.get(tool))
+
+    def version_text(tool):
+        version = installed.get(tool)
+        return f"Python {'.'.join(map(str, version))}" if version is not None else None
+
+    monkeypatch.setattr(doctor, "_installed_version_text", version_text)
     return installed
 
 
@@ -76,6 +82,32 @@ def test_python_requires_and_missing_venv(tmp_path, versions, monkeypatch):
     (tmp_path / "uv.lock").write_text("")
     found = levels(doctor.check_project(tmp_path))
     assert ("error", "python") in found and ("error", "uv") in found
+
+
+def test_python_prerelease_does_not_satisfy_matching_final_pin(tmp_path, monkeypatch):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\nrequires-python = ">=3.12.1"\n')
+    monkeypatch.setattr(doctor, "which", lambda name: "/usr/bin/python3")
+    monkeypatch.setattr(doctor, "run_text", lambda command, timeout=10.0: "Python 3.12.1rc1")
+
+    report = doctor.check_project(tmp_path)
+
+    assert levels(report) == [("warn", "python")]
+    assert "3.12.1rc1" in report.findings[0].message
+
+
+def test_python_final_release_satisfies_matching_pin(tmp_path, monkeypatch):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\nrequires-python = ">=3.12.1"\n')
+    monkeypatch.setattr(doctor, "which", lambda name: "/usr/bin/python3")
+    monkeypatch.setattr(doctor, "run_text", lambda command, timeout=10.0: "Python 3.12.1")
+
+    assert levels(doctor.check_project(tmp_path)) == [("ok", "python")]
+
+
+def test_node_exact_pin_is_unchanged(tmp_path, versions):
+    versions["node"] = (24, 11, 1)
+    (tmp_path / ".nvmrc").write_text("24.11.1\n")
+
+    assert levels(doctor.check_project(tmp_path)) == [("ok", "node")]
 
 
 def test_go_minimum_version(tmp_path, versions):

@@ -53,14 +53,18 @@ _VERSION_COMMANDS = {
 _TOOL_VERSIONS_ALIASES = {"nodejs": "node", "golang": "go", "python": "python", "rust": "rust", "ruby": "ruby"}
 
 
-def installed_version(tool: str) -> tuple[int, int, int] | None:
+def _installed_version_text(tool: str) -> str | None:
     command = _VERSION_COMMANDS.get(tool)
     if not command or not which(command[0]):
         return None
     output = run_text(command)
     if tool == "go" and output:
         output = output.replace("go version go", "")
-    return parse_version(output)
+    return output
+
+
+def installed_version(tool: str) -> tuple[int, int, int] | None:
+    return parse_version(_installed_version_text(tool))
 
 
 def _fmt(version: tuple[int, ...] | None) -> str:
@@ -170,11 +174,32 @@ def _check_node_modules(root: Path, report: Report) -> None:
 # --- Python -----------------------------------------------------------------
 
 
-def _python_for(root: Path) -> tuple[str, tuple[int, int, int] | None]:
+def _python_for(root: Path) -> tuple[str, tuple[int, int, int] | None, str | None]:
     venv = root / ".venv" / "bin" / "python"
     if venv.exists():
-        return ".venv python", parse_version(run_text([str(venv), "--version"]))
-    return "python3", installed_version("python")
+        output = run_text([str(venv), "--version"])
+        return ".venv python", parse_version(output), output
+    output = _installed_version_text("python")
+    return "python3", parse_version(output), output
+
+
+_PYTHON_PRERELEASE = re.compile(
+    r"\d+(?:\.\d+){0,2}[-_.]?(?:a|b|rc|alpha|beta|c|pre|preview|dev)\.?[0-9]*",
+    re.I,
+)
+_PYTHON_PIN_BOUNDARY = re.compile(r"^\s*(>=|==|===|~=)\s*(\d+(?:\.\d+){0,2})\s*$")
+
+
+def _prerelease_at_pin_boundary(output: str | None, version: tuple[int, int, int], spec: str) -> bool:
+    if not output or not _PYTHON_PRERELEASE.search(output):
+        return False
+    for clause in spec.split(","):
+        match = _PYTHON_PIN_BOUNDARY.match(clause)
+        if match:
+            boundary = parse_version(match.group(2))
+            if boundary == version:
+                return True
+    return False
 
 
 def check_python(root: Path, report: Report) -> None:
@@ -194,7 +219,7 @@ def check_python(root: Path, report: Report) -> None:
         pins.append(("requires-python", str(requires)))
     if not pins and not (root / "uv.lock").exists():
         return
-    label, python = _python_for(root)
+    label, python, python_output = _python_for(root)
     for source, spec in pins:
         if python is None:
             report.add("error", "python", f"Python is required by {source} ({spec}) but not found", "uv python install")
@@ -204,6 +229,13 @@ def check_python(root: Path, report: Report) -> None:
             ok = pep440.satisfies(python, clause)
         except pep440.UnsupportedSpecifier:
             report.add("warn", "python", f"cannot evaluate {source} {spec!r}; {label} is {_fmt(python)}")
+            continue
+        if ok and _prerelease_at_pin_boundary(python_output, python, clause):
+            report.add(
+                "warn",
+                "python",
+                f"{python_output.strip()} is a pre-release and does not satisfy {source} ({spec})",
+            )
             continue
         if ok:
             report.add("ok", "python", f"{label} {_fmt(python)} satisfies {source} ({spec})")
