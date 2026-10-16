@@ -1,0 +1,1 @@
+- `ctk doctor`: warn when an installed Python prerelease is mistaken for its matching final-release pin.
