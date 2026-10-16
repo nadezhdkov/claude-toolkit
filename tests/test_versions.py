@@ -110,7 +110,43 @@ def test_npm_unsupported_range_is_reported_not_guessed(spec):
         ((3, 12, 7), "==3.12.*", True),
         ((3, 13, 0), "==3.12.*", False),
         ((3, 12, 0), "!=3.12.*", False),
+        ((1, 2, 3), ">=1.2.3rc1", True),
+        ((1, 2, 3), "<1.2.4.dev0", True),
+        ((1, 2, 3), ">1.2.3a1", True),
+        ((1, 2, 3), ">=1.2.3.post1", False),
+        ((1, 2, 3), "==1.2.3rc1", False),
+        ((1, 2, 3), "==1.2.3.post1", False),
+        ((1, 2, 3), "<=1.2.3.post1", True),
+        ((1, 2, 3), ">1.2.3.dev0", True),
+        ((1, 2, 3), "<1.2.3", False),
+        ((1, 2, 3), ">1.2.3rc1.dev0", True),
+        ((1, 2, 3), "<1.2.3.post1.dev0", True),
+        ((1, 2, 3), "<1.2.3b2", False),
+        ((3, 13, 0), ">=3.13.0rc1", True),
+        ((1, 9, 9), "<2.0.dev0", True),
+        ((2, 0, 0), "<2.0.dev0", False),
+        ((3, 13, 1), "~=3.13.0rc1", True),
+        ((3, 14, 0), "~=3.13.0rc1", False),
     ],
 )
 def test_pep440_specifiers(version, spec, expected):
     assert pep440.satisfies(version, spec) is expected
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "==1.2.3rc1.*",
+        "===1.2.3rc1",
+        ">=1.2.3alpha1",
+        ">=1.2.3-rc1",
+        ">=1.2.3RC1",
+        ">=1.2.3a",
+        ">=1!1.2",
+        "==1.2.3+local",
+        ">=1.2.3.dev0rc1",
+    ],
+)
+def test_pep440_unsupported_specifier_is_reported_not_guessed(spec):
+    with pytest.raises(pep440.UnsupportedSpecifier):
+        pep440.satisfies((1, 2, 3), spec)
