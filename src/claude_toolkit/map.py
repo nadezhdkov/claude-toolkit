@@ -377,7 +377,10 @@ def run(args) -> int:
     if not root.is_dir():
         print(f"map: not a directory: {root}", file=sys.stderr)
         return 1
-    if args.uses:
+    if args.uses is not None:
+        if not args.uses.strip():
+            print("map: --uses needs a symbol name", file=sys.stderr)
+            return 2
         uses = find_uses(root, args.uses)
         if args.json:
             print(json.dumps([asdict(u) for u in uses], indent=2))
