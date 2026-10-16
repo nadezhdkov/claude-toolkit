@@ -1,0 +1,1 @@
+- `guard-destructive`: flag `xargs rm -rf <path>`, `find <path> -delete` and `find <path> -exec rm -rf {}` outside the project, like `rm -rf`.

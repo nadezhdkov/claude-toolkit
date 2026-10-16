@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from claude_toolkit import doctor
+from claude_toolkit import cli, doctor
 
 UNRELEASED = doctor.Dependency("future-tool", "a tool that has not shipped yet", False, {}, shipped=False)
 
@@ -94,6 +94,18 @@ def test_project_without_pins_is_ok(tmp_path, versions):
     report = doctor.check_project(tmp_path)
     assert report.findings == []
     assert doctor.render(report).endswith("ok (no toolchain pins found)")
+
+
+@pytest.mark.parametrize("path_kind", ["missing", "file"])
+def test_doctor_rejects_non_directories(tmp_path, capsys, path_kind):
+    path = tmp_path / "missing" if path_kind == "missing" else tmp_path / "some-file.txt"
+    if path_kind == "file":
+        path.write_text("not a directory")
+
+    assert cli.main(["doctor", str(path)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert f"doctor: not a directory: {path.resolve()}" in captured.err
 
 
 def test_toolkit_check_marks_required_and_optional(monkeypatch, versions):

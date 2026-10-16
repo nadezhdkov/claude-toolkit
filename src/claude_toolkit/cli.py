@@ -17,7 +17,14 @@ from .style import Style
 def _doctor(args: argparse.Namespace) -> int:
     from . import doctor
 
-    report = doctor.check_toolkit() if args.toolkit else doctor.check_project(Path(args.path).resolve())
+    if args.toolkit:
+        report = doctor.check_toolkit()
+    else:
+        root = Path(args.path).resolve()
+        if not root.is_dir():
+            print(f"doctor: not a directory: {root}", file=sys.stderr)
+            return 1
+        report = doctor.check_project(root)
     print(doctor.to_json(report) if args.json else doctor.render(report, verbose=args.verbose))
     return 1 if report.errors else 0
 

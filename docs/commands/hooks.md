@@ -8,7 +8,7 @@ event JSON on stdin, so all logic lives in the tested `ctk` package.
 |---|---|---|
 | `format-file` | after Edit/Write | formats only the edited file with the project's formatter; silent on success |
 | `affected-tests` | after Edit/Write (records), end of turn (runs) | runs the tests related to this turn's edits; speaks only on failure |
-| `guard-destructive` | before Bash | flags `rm -rf` outside the project, force-push to `main`/`master`, `git reset --hard` with uncommitted work; **warn-only by default** |
+| `guard-destructive` | before Bash | flags `rm -rf` (also via `xargs`) and `find -delete` outside the project, force-push to `main`/`master`, `git reset --hard` with uncommitted work; **warn-only by default** |
 | `secrets` | before Bash (`git commit`) | `gitleaks` on the staged changes; denies the commit on findings |
 | `notify` | waiting for input, end of a long turn | desktop notification, at most one per minute |
 | `continuity` | session starts after a compaction, `/clear`, a resume or a relay | puts back the branch, commit, uncommitted files, `ctk verify` status and the branch's handoff file |
@@ -112,7 +112,7 @@ collected" (exit 5) counts as a pass.
 
 ## `guard-destructive`
 
-Parses each Bash command (through `&&`, pipes, `sudo`, `env`, `cd dir &&`,
+Parses each Bash command (through `&&`, pipes, `sudo`, `env`, `xargs`, `cd dir &&`,
 `git -C dir` and `bash -c '…'`) and flags:
 
 - `rm` with recursive **and** force flags on a target that is not strictly
@@ -120,6 +120,11 @@ Parses each Bash command (through `&&`, pipes, `sudo`, `env`, `cd dir &&`,
   the session scratchpad). The project itself, its parents and targets that
   depend on unknown variables are always flagged. When the session runs in
   the home directory or `/`, there is no project to protect, so every such target is flagged.
+  `xargs rm -rf <path>` is checked the same way; paths that `xargs` reads from
+  its input are not known and not checked.
+- `find <path> … -delete` and `find <path> … -exec rm -rf {} …` (also
+  `-execdir`, `-ok`, `-okdir`) when a start path fails the same test. A
+  `find .` run at the project root is allowed, since `.` itself is never removed.
 - `git push` with `-f`, `--force`, `--force-with-lease` or a `+ref` refspec
   to a protected branch (explicit, `HEAD`, or the current branch when no
   refspec is given).

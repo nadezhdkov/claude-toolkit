@@ -1,0 +1,1 @@
+- `ctk doctor`: evaluate PEP 440 pre-, post- and dev-release versions (`>=3.13.0rc1`, `<2.0.dev0`) in `requires-python` and `.python-version` pins.
