@@ -1,7 +1,7 @@
 """Approximate parsing of a Bash tool command into simple commands.
 
 Good enough to find ``rm``, ``git push`` and friends behind ``&&``, pipes,
-``sudo``, ``env VAR=1``, ``bash -c '…'`` and ``cd dir &&``. It does not
+``sudo``, ``env VAR=1``, ``xargs``, ``bash -c '…'`` and ``cd dir &&``. It does not
 execute anything and never needs to be exact: guards built on it only warn or
 block known patterns.
 """
@@ -18,6 +18,9 @@ ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 OPERATOR = re.compile(r"^[();<>|&]+$")
 WRAPPERS = {"sudo", "doas", "env", "command", "builtin", "nohup", "time", "nice", "exec", "timeout", "stdbuf"}
 WRAPPER_VALUE_OPTIONS = {"-u", "-g", "-n", "-C", "-o", "-e", "-i", "-s", "-k", "--user", "--group", "--signal"}
+# Options of xargs whose value is the next word; `-i`, `-e`, `-l` and their long forms only take one attached.
+XARGS_VALUE_OPTIONS = {"-a", "-d", "-E", "-I", "-L", "-n", "-P", "-s", "--arg-file", "--delimiter", "--max-args"}
+XARGS_VALUE_OPTIONS |= {"--max-procs", "--max-chars", "--process-slot-var"}
 SHELLS = {"sh", "bash", "zsh", "dash", "fish"}
 
 
@@ -53,6 +56,11 @@ def _strip_wrappers(argv: list[str]) -> list[str]:
                 argv = argv[2:] if takes_value else argv[1:]
             if wrapper == "timeout" and argv:
                 argv = argv[1:]  # the duration
+        elif os.path.basename(argv[0]) == "xargs":
+            argv = argv[1:]
+            while argv and argv[0].startswith("-"):
+                takes_value = argv[0] in XARGS_VALUE_OPTIONS and len(argv) > 1
+                argv = argv[2:] if takes_value else argv[1:]
         else:
             break
     return argv
