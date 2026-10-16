@@ -89,6 +89,23 @@ def test_uses_lists_definition_first_and_the_tests(tmp_path, capsys):
     assert cli.main(["map", str(root), "--uses", "NoSuchThing"]) == 1
 
 
+def test_uses_rejects_empty_and_blank_names(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    for name in ("", "  "):
+        assert cli.main(["map", str(root), "--uses", name]) == 2
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "map: --uses needs a symbol name" in captured.err
+
+
+def test_without_uses_prints_the_full_map(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    assert cli.main(["map", str(root)]) == 0
+    output = capsys.readouterr().out
+    assert output.startswith("map: ")
+    assert "app/" in output
+
+
 def test_json_and_no_code_is_executed(tmp_path, capsys):
     root = make_repo(tmp_path)
     write(root, "app/boom.py", "raise SystemExit('executed!')\ndef safe(): ...\n")
