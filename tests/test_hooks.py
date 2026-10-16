@@ -90,6 +90,11 @@ def test_split_follows_operators_wrappers_cd_and_nested_shells(tmp_path):
     assert shell.expand("$TARGET/x", tmp_path) is None
 
 
+def test_split_unwraps_xargs_and_its_options(tmp_path):
+    parsed = shell.split("ls | xargs -0 -I {} -n1 --max-procs 4 sudo rm -rf {} ; xargs", tmp_path)
+    assert [c.argv for c in parsed] == [["ls"], ["rm", "-rf", "{}"]]
+
+
 # --- guard-destructive ---------------------------------------------------------
 
 
@@ -120,6 +125,56 @@ def test_rm_rules(tmp_path, monkeypatch, command, flagged):
     repo = git_repo(tmp_path / "repo")
     event = base.Event.from_json(json.loads(bash(repo, command)))
     assert bool(guard.check(command, event)) is flagged
+
+
+@pytest.mark.parametrize(
+    ("command", "flagged"),
+    [
+        ("xargs rm -rf build", False),
+        ("xargs -0 rm -rf /tmp/ctk-test-temp/x", False),
+        ("xargs rm -rf", False),  # no target: the paths come from stdin
+        ("xargs rm -r /opt", False),  # not forced
+        ("xargs", False),
+        ("find build -delete", False),
+        ("find . -name '*.pyc' -delete", False),  # find never deletes its own start point
+        ("find -name '*.pyc' -delete", False),
+        ("find /tmp/ctk-test-temp/build -delete", False),
+        ("find /opt -name x", False),
+        ("find /opt -exec rm -f {} \\;", False),  # not recursive
+        ("find /tmp/ctk-test-temp/x -exec rm -rf {} +", False),
+        ("cd sub && find . -delete", False),
+        ("xargs rm -rf /opt/y", True),
+        ("xargs -0 rm -rf /opt/y", True),
+        ("xargs -I {} rm -rf ~/x", True),
+        ("xargs -n 1 -P4 --null rm -rf /opt/y", True),
+        ("sudo xargs rm -rf /etc", True),
+        ("find /opt -delete", True),
+        ("find /opt -name x -delete", True),
+        ("find -L /opt -delete", True),
+        ("find /opt -exec rm -rf {} \\;", True),
+        ("find /opt -exec rm -rf {} ';'", True),
+        ("find /opt -exec /bin/rm -rf {} +", True),
+        ("find build /opt -execdir rm -fr {} +", True),
+        ("find .. -delete", True),  # a parent of the project
+        ('find "$PWD" -delete', True),  # unlike `.`, find deletes this start point too
+        ("find /tmp/ctk-test-temp -exec rm -rf {} +", True),  # passes the temp root itself to rm
+        ("bash -c 'find /opt -delete'", True),
+    ],
+)
+def test_xargs_and_find_rules(tmp_path, monkeypatch, command, flagged):
+    monkeypatch.setattr(guard, "temp_dirs", lambda event: [Path("/tmp/ctk-test-temp")])
+    repo = git_repo(tmp_path / "repo")
+    event = base.Event.from_json(json.loads(bash(repo, command)))
+    assert bool(guard.check(command, event)) is flagged
+
+
+def test_find_reasons_name_the_deletion(tmp_path, monkeypatch):
+    monkeypatch.setattr(guard, "temp_dirs", lambda event: [Path("/tmp/ctk-test-temp")])
+    repo = git_repo(tmp_path / "repo")
+    event = base.Event.from_json(json.loads(bash(repo, "true")))
+    assert guard.check("find /opt -delete", event) == ["`find -delete` outside the project: /opt"]
+    assert guard.check("find /opt -exec rm -rf {} +", event) == ["`find -exec rm -rf` outside the project: /opt"]
+    assert guard.check("xargs -0 rm -rf /opt/y", event) == ["`rm -rf` outside the project: /opt/y"]
 
 
 @pytest.mark.parametrize(
