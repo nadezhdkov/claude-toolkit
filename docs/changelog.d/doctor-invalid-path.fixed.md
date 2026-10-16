@@ -1,0 +1,1 @@
+- `ctk doctor`: report an error when the project path is missing or is not a directory.
